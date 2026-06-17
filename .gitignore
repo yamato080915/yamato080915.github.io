@@ -1,0 +1,5 @@
+Gemfile
+Gemfile.lock
+.jekyll-cache
+_site
+team-shuffle/memo
