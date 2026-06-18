@@ -6,214 +6,71 @@ title: チーム分け
 <h1 class="text-center mb-4">チーム分け</h1>
 
 <div class="row">
-    <div class="col-md-4">
-        <div class="card mb-4">
-            <div class="card-header">プレイヤー追加</div>
-            <div class="card-body">
-                <form id="add-player-form">
-                    <div class="mb-3">
-                        <label class="form-label">名前</label>
-                        <input type="text" id="p-name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">ランク</label>
-                        <select id="p-rank" class="form-select">
-                            <option value="iron">Iron</option>
-                            <option value="bronze">Bronze</option>
-                            <option value="silver">Silver</option>
-                            <option value="gold">Gold</option>
-                            <option value="platinum">Platinum</option>
-                            <option value="diamond">Diamond</option>
-                            <option value="ascendant">Ascendant</option>
-                            <option value="immortal">Immortal</option>
-                            <option value="radiant">Radiant</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Tier</label>
-                        <select id="p-tier" class="form-select">
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                        </select>
-                        <div class="form-text">※Radiantの場合はTierに関わらず15ptになります。</div>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">追加</button>
-                </form>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-8">
-        <div class="card mb-4">
-            <div class="card-header">
-                プレイヤーリスト (<span id="player-count">0</span>人)
-            </div>
-            <ul id="player-list" class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
-            </ul>
-            <div class="card-body border-top">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        <label class="col-form-label">チーム数</label>
-                    </div>
-                    <div class="col-auto">
-                        <input type="number" id="team-count" class="form-control" value="2" min="1">
-                    </div>
-                    <div class="col-auto">
-                        <button id="shuffle-btn" class="btn btn-success">チーム分け実行</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+	<div class="col-md-4">
+		<div class="card mb-4">
+			<div class="card-header">プレイヤー追加</div>
+			<div class="card-body">
+				<form id="add-player-form">
+					<div class="mb-3">
+						<label class="form-label">名前</label>
+						<input type="text" id="p-name" class="form-control" required>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">ランク</label>
+						<select id="p-tier" class="form-select">
+							<option value="iron">Iron</option>
+							<option value="bronze">Bronze</option>
+							<option value="silver">Silver</option>
+							<option value="gold">Gold</option>
+							<option value="platinum">Platinum</option>
+							<option value="diamond">Diamond</option>
+							<option value="ascendant">Ascendant</option>
+							<option value="immortal">Immortal</option>
+							<option value="radiant">Radiant</option>
+						</select>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">ディビジョン</label>
+						<select id="p-div" class="form-select">
+							<option value="1">1</option>
+							<option value="2">2</option>
+							<option value="3">3</option>
+						</select>
+					</div>
+					<div class="mb-3 form-check">
+						<input type="checkbox" class="form-check-input" id="p-vc" checked>
+						<label class="form-check-label" for="p-vc">ボイスチャットあり</label>
+					</div>
+					<button type="submit" class="btn btn-primary w-100">追加</button>
+				</form>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-8">
+		<div class="card mb-4">
+			<div class="card-header">
+				プレイヤーリスト (<span id="player-count">0</span>人)
+			</div>
+			<ul id="player-list" class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+			</ul>
+			<div class="card-body border-top">
+				<div class="row align-items-center">
+					<div class="col-auto">
+						<label class="col-form-label">チーム数</label>
+					</div>
+					<div class="col-auto">
+						<input type="number" id="team-count" class="form-control" value="2" min="1">
+					</div>
+					<div class="col-auto">
+						<button id="shuffle-btn" class="btn btn-success">チーム分け実行</button>
+					</div>
+				</div>
+			</div>
+		</div>
 
-        <h3>結果</h3>
-        <div id="result" class="row"></div>
-    </div>
+		<h3>結果</h3>
+		<div id="result" class="row"></div>
+	</div>
 </div>
 
-<script>
-let pointsData = {};
-let players = [];
-
-// points.jsonの読み込み
-fetch('points.json')
-    .then(res => res.json())
-    .then(data => {
-        pointsData = data;
-    })
-    .catch(err => console.error('Error loading points.json:', err));
-
-document.getElementById('add-player-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const name = document.getElementById('p-name').value;
-    const rank = document.getElementById('p-rank').value;
-    const tier = parseInt(document.getElementById('p-tier').value);
-    
-    players.push({ name, rank, tier });
-    updatePlayerList();
-    
-    document.getElementById('p-name').value = '';
-    document.getElementById('p-name').focus();
-});
-
-function updatePlayerList() {
-    const list = document.getElementById('player-list');
-    list.innerHTML = '';
-    players.forEach((p, index) => {
-        const li = document.createElement('li');
-        li.className = 'list-group-item d-flex justify-content-between align-items-center';
-        li.innerHTML = `
-            <span><strong>${p.name}</strong> <span class="badge bg-secondary ms-2">${p.rank} ${p.tier}</span></span>
-        `;
-        
-        const delBtn = document.createElement('button');
-        delBtn.className = 'btn btn-danger btn-sm';
-        delBtn.textContent = '削除';
-        delBtn.onclick = () => {
-            players.splice(index, 1);
-            updatePlayerList();
-        };
-        li.appendChild(delBtn);
-        list.appendChild(li);
-    });
-    document.getElementById('player-count').textContent = players.length;
-}
-
-document.getElementById('shuffle-btn').addEventListener('click', function() {
-    const teamCount = parseInt(document.getElementById('team-count').value);
-    if(players.length === 0) {
-        alert('プレイヤーを追加してください');
-        return;
-    }
-    if(!pointsData || Object.keys(pointsData).length === 0) {
-        alert('ポイントデータを読み込み中です。少々お待ちください。');
-        return;
-    }
-    
-    // ポイントの付与
-    const playersWithPoints = players.map(p => {
-        let pts = 0;
-        if (p.rank === 'radiant') {
-            pts = pointsData[p.rank][0];
-        } else {
-            pts = pointsData[p.rank][p.tier - 1] || 0;
-        }
-        return { ...p, point: pts };
-    });
-
-    let bestTeams = null;
-    let minDiff = Infinity;
-
-    // モンテカルロ風に1000回試行して一番ポイント差の少ないチーム分けを探す
-    for (let sim = 0; sim < 1000; sim++) {
-        let shuffled = [...playersWithPoints].sort(() => Math.random() - 0.5);
-        shuffled.sort((a, b) => b.point - a.point);
-        
-        let teams = Array.from({length: teamCount}, () => ({ members: [], totalPoints: 0 }));
-        
-        for (const p of shuffled) {
-            let targetTeam = null;
-            let minPts = Infinity;
-            
-            for (const t of teams) {
-                if (t.members.length < 5 && t.totalPoints < minPts) {
-                    minPts = t.totalPoints;
-                    targetTeam = t;
-                }
-            }
-            
-            // 全チームが5人埋まっているなどの場合は、とにかくポイントが最小のチームに割り当て
-            if (!targetTeam) {
-                for (const t of teams) {
-                    if (t.totalPoints < minPts) {
-                        minPts = t.totalPoints;
-                        targetTeam = t;
-                    }
-                }
-            }
-            
-            targetTeam.members.push(p);
-            targetTeam.totalPoints += p.point;
-        }
-        
-        let ptsArr = teams.map(t => t.totalPoints);
-        let maxP = Math.max(...ptsArr);
-        let minP = Math.min(...ptsArr);
-        let diff = maxP - minP;
-        
-        if (diff < minDiff) {
-            minDiff = diff;
-            bestTeams = JSON.parse(JSON.stringify(teams)); // 深いコピー
-        }
-        
-        // 差が0ならこれ以上最適なものはないので終了
-        if (minDiff === 0) break;
-    }
-    
-    // 結果表示
-    const resultDiv = document.getElementById('result');
-    resultDiv.innerHTML = '';
-    
-    bestTeams.forEach((t, i) => {
-        const col = document.createElement('div');
-        col.className = 'col-lg-6 mb-3';
-        const card = document.createElement('div');
-        card.className = 'card h-100';
-        card.innerHTML = `
-            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <span>チーム ${i + 1}</span>
-                <span class="badge bg-primary rounded-pill">合計 ${t.totalPoints} pts</span>
-            </div>
-            <ul class="list-group list-group-flush">
-                ${t.members.map(m => `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    ${m.name}
-                    <span class="badge bg-light text-dark border">${m.rank} ${m.tier} (${m.point}pts)</span>
-                </li>`).join('')}
-                ${t.members.length === 0 ? '<li class="list-group-item text-muted text-center">メンバーがいません</li>' : ''}
-            </ul>
-        `;
-        col.appendChild(card);
-        resultDiv.appendChild(col);
-    });
-});
-</script>
+<script src="{{ '/team-shuffle/shuffle.js' | relative_url }}"></script>
