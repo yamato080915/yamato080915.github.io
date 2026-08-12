@@ -45,6 +45,48 @@ title: チーム分け
 				</form>
 			</div>
 		</div>
+		<div class="card mb-4">
+			<div class="card-header">
+				途中参加プレイヤー (<span id="standby-player-count">0</span>人)
+			</div>
+			<div class="card-body">
+				<form id="add-standby-form">
+					<div class="mb-3">
+						<label class="form-label">名前</label>
+						<input type="text" id="s-name" class="form-control" required>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">ランク</label>
+						<select id="s-tier" class="form-select">
+							<option value="iron">Iron</option>
+							<option value="bronze">Bronze</option>
+							<option value="silver">Silver</option>
+							<option value="gold">Gold</option>
+							<option value="platinum">Platinum</option>
+							<option value="diamond">Diamond</option>
+							<option value="ascendant">Ascendant</option>
+							<option value="immortal">Immortal</option>
+							<option value="radiant">Radiant</option>
+						</select>
+					</div>
+					<div class="mb-3">
+						<label class="form-label">ディビジョン</label>
+						<select id="s-div" class="form-select">
+							<option value="1">1</option>
+							<option value="2">2</option>
+							<option value="3">3</option>
+						</select>
+					</div>
+					<div class="mb-3 form-check">
+						<input type="checkbox" class="form-check-input" id="s-vc" checked>
+						<label class="form-check-label" for="s-vc">ボイスチャットあり</label>
+					</div>
+					<button type="submit" class="btn btn-outline-primary w-100">途中参加として追加</button>
+				</form>
+			</div>
+			<ul id="standby-player-list" class="list-group list-group-flush" style="max-height: 260px; overflow-y: auto;">
+			</ul>
+		</div>
 	</div>
 	<div class="col-md-8">
 		<div class="card mb-4">
@@ -62,12 +104,12 @@ title: チーム分け
 						<input type="number" id="team-count" class="form-control" value="2" min="1">
 					</div>
 					<div class="col-auto">
-						<button id="shuffle-btn" class="btn btn-success">チーム分け実行</button>
+						<button id="shuffle-btn" class="btn btn-success">チーム分け・補充実行</button>
 					</div>
 				</div>
+				<div class="small text-muted mt-2">すでにチーム分けを行っている場合は、退出・途中参加を反映した調整を行います。<br>退出したプレイヤーより途中参加プレイヤーの人数が多い場合、一番ポイントバランスが良い状態になるような選び方となります。</div>
 			</div>
 		</div>
-
 		<h3>結果</h3>
 		<div id="result" class="row"></div>
 	</div>
