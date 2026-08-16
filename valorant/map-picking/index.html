@@ -1,0 +1,316 @@
+---
+layout: default
+title: マップピック
+---
+
+<h1 class="text-center mb-4">マップピック</h1>
+<p class="text-center text-muted mb-4">VALORANT Champions Tour(VCT)公式ルールに準拠したマップ選定システムです</p>
+
+<div class="row justify-content-center mb-4">
+	<div class="col-lg-8">
+		<div class="card shadow-sm">
+			<div class="card-body">
+				<div class="row g-3 align-items-end">
+					<div class="col-md-4">
+						<label class="form-label fw-bold">フォーマット</label>
+						<select class="form-select" id="formatSelect">
+							<option value="bo3">Best of 3</option>
+							<option value="bo5">Best of 5</option>
+						</select>
+					</div>
+					<div class="col-md-4">
+						<label class="form-label fw-bold">Team A (上位シード)</label>
+						<input type="text" class="form-control" id="teamAName" placeholder="Team A" value="Team A">
+					</div>
+					<div class="col-md-4">
+						<label class="form-label fw-bold">Team B</label>
+						<input type="text" class="form-control" id="teamBName" placeholder="Team B" value="Team B">
+					</div>
+				</div>
+				<div class="text-center mt-3">
+					<button type="button" class="btn btn-primary btn-lg" id="startBtn">
+						<i class="bi bi-play-fill"></i> マップピックを開始
+					</button>
+					<button type="button" class="btn btn-outline-secondary btn-lg d-none" id="restartBtn">
+						<i class="bi bi-arrow-counterclockwise"></i> やり直す
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="row justify-content-center mb-4 d-none" id="processArea">
+	<div class="col-lg-8">
+		<div class="card shadow-sm border-primary">
+			<div class="card-body text-center">
+				<div class="text-muted mb-1" id="stepCounter">STEP 1</div>
+				<h4 class="mb-3" id="instructionText"></h4>
+				<div class="d-flex flex-wrap justify-content-center gap-2" id="actionArea"></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="row justify-content-center mb-4 d-none" id="logArea">
+	<div class="col-lg-8">
+		<div class="card shadow-sm">
+			<div class="card-body">
+				<h5 class="card-title mb-3"><i class="bi bi-list-check"></i> 進行状況</h5>
+				<ul class="list-group list-group-flush" id="logList"></ul>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="row justify-content-center mb-5 d-none" id="resultArea">
+	<div class="col-lg-8">
+		<div class="card shadow-sm border-success">
+			<div class="card-body">
+				<h5 class="card-title mb-3 text-success"><i class="bi bi-trophy"></i> 対戦マップ確定</h5>
+				<div class="table-responsive">
+					<table class="table table-bordered align-middle text-center mb-0">
+						<thead class="table-light">
+							<tr>
+								<th>MAP</th>
+								<th>マップ名</th>
+								<th id="attackHeader"></th>
+								<th id="defenseHeader"></th>
+							</tr>
+						</thead>
+						<tbody id="resultTableBody"></tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.map-btn {
+		min-width: 130px;
+	}
+	.map-result-name {
+		font-family: "Squada One";
+		font-size: 1.4rem;
+		letter-spacing: 0.03em;
+	}
+	#logList .badge {
+		font-weight: 500;
+	}
+</style>
+
+<script>
+	const ALL_MAPS = ["Haven", "Lotus", "Split", "Sunset", "Breeze", "Summit", "Ascent"];
+
+	// VCT公式ルール(4.6.8 / 4.6.9)に基づく手順定義
+	// action: "ban" | "pick" | "side" | "remain"
+	// team: "A" | "B"（sideの場合はサイドを選ぶ側のチーム）
+	const SEQUENCES = {
+		bo3: [
+			{ team: "A", action: "ban" },
+			{ team: "B", action: "ban" },
+			{ team: "A", action: "pick", slot: 1 },
+			{ team: "B", action: "side", slot: 1 },
+			{ team: "B", action: "pick", slot: 2 },
+			{ team: "A", action: "side", slot: 2 },
+			{ team: "A", action: "ban" },
+			{ team: "B", action: "ban" },
+			{ team: null, action: "remain", slot: 3 },
+			{ team: "A", action: "side", slot: 3 },
+		],
+		bo5: [
+			{ team: "A", action: "ban" },
+			{ team: "B", action: "ban" },
+			{ team: "A", action: "pick", slot: 1 },
+			{ team: "B", action: "side", slot: 1 },
+			{ team: "B", action: "pick", slot: 2 },
+			{ team: "A", action: "side", slot: 2 },
+			{ team: "A", action: "pick", slot: 3 },
+			{ team: "B", action: "side", slot: 3 },
+			{ team: "B", action: "pick", slot: 4 },
+			{ team: "A", action: "side", slot: 4 },
+			{ team: null, action: "remain", slot: 5 },
+			{ team: "B", action: "side", slot: 5 },
+		],
+	};
+
+	let state = {
+		teamNames: { A: "Team A", B: "Team B" },
+		remaining: [],
+		results: {}, // slot -> { map, pickedBy, sideTeam, side }
+		sequence: [],
+		stepIndex: 0,
+	};
+
+	const startBtn = document.getElementById("startBtn");
+	const restartBtn = document.getElementById("restartBtn");
+	const processArea = document.getElementById("processArea");
+	const logArea = document.getElementById("logArea");
+	const resultArea = document.getElementById("resultArea");
+	const instructionText = document.getElementById("instructionText");
+	const actionArea = document.getElementById("actionArea");
+	const stepCounter = document.getElementById("stepCounter");
+	const logList = document.getElementById("logList");
+
+	function teamLabel(team) {
+		return state.teamNames[team] || team;
+	}
+
+	function addLog(html) {
+		const li = document.createElement("li");
+		li.className = "list-group-item";
+		li.innerHTML = html;
+		logList.appendChild(li);
+	}
+
+	function startProcess() {
+		const format = document.getElementById("formatSelect").value;
+		state.teamNames.A = document.getElementById("teamAName").value.trim() || "Team A";
+		state.teamNames.B = document.getElementById("teamBName").value.trim() || "Team B";
+		state.remaining = [...ALL_MAPS];
+		state.results = {};
+		state.sequence = SEQUENCES[format];
+		state.stepIndex = 0;
+
+		logList.innerHTML = "";
+		document.getElementById("resultTableBody").innerHTML = "";
+
+		startBtn.classList.add("d-none");
+		restartBtn.classList.remove("d-none");
+		processArea.classList.remove("d-none");
+		logArea.classList.remove("d-none");
+		resultArea.classList.add("d-none");
+
+		document.getElementById("formatSelect").disabled = true;
+		document.getElementById("teamAName").disabled = true;
+		document.getElementById("teamBName").disabled = true;
+
+		runStep();
+	}
+
+	function runStep() {
+		if (state.stepIndex >= state.sequence.length) {
+			finishProcess();
+			return;
+		}
+
+		const step = state.sequence[state.stepIndex];
+		stepCounter.textContent = `STEP ${state.stepIndex + 1} / ${state.sequence.length}`;
+		actionArea.innerHTML = "";
+
+		if (step.action === "ban") {
+			instructionText.innerHTML = `<span class="fw-bold">${teamLabel(step.team)}</span> は1マップをBANしてください`;
+			state.remaining.forEach((map) => {
+				const btn = document.createElement("button");
+				btn.className = "btn btn-outline-danger map-btn";
+				btn.textContent = map;
+				btn.addEventListener("click", () => {
+					state.remaining = state.remaining.filter((m) => m !== map);
+					addLog(`<span class="badge bg-danger me-2">BAN</span>${teamLabel(step.team)} が <strong>${map}</strong> をBAN`);
+					state.stepIndex++;
+					runStep();
+				});
+				actionArea.appendChild(btn);
+			});
+		} else if (step.action === "pick") {
+			instructionText.innerHTML = `<span class="fw-bold">${teamLabel(step.team)}</span> はMap${step.slot}をPICKしてください`;
+			state.remaining.forEach((map) => {
+				const btn = document.createElement("button");
+				btn.className = "btn btn-outline-primary map-btn";
+				btn.textContent = map;
+				btn.addEventListener("click", () => {
+					state.remaining = state.remaining.filter((m) => m !== map);
+					state.results[step.slot] = { map: map, pickedBy: step.team };
+					addLog(`<span class="badge bg-primary me-2">PICK</span>${teamLabel(step.team)} が Map${step.slot} に <strong>${map}</strong> をPICK`);
+					state.stepIndex++;
+					runStep();
+				});
+				actionArea.appendChild(btn);
+			});
+		} else if (step.action === "remain") {
+			const map = state.remaining[0];
+			state.remaining = [];
+			state.results[step.slot] = { map: map, pickedBy: null };
+			addLog(`<span class="badge bg-secondary me-2">残り</span>Map${step.slot} は残りマップの <strong>${map}</strong> に決定`);
+			state.stepIndex++;
+			runStep();
+		} else if (step.action === "side") {
+			const mapInfo = state.results[step.slot];
+			instructionText.innerHTML = `<span class="fw-bold">${teamLabel(step.team)}</span> は Map${step.slot}（<strong>${mapInfo.map}</strong>）のサイドを選択してください`;
+
+			const attackBtn = document.createElement("button");
+			attackBtn.className = "btn btn-outline-warning map-btn";
+			attackBtn.innerHTML = `<i class="bi bi-crosshair"></i> アタッカー`;
+			attackBtn.addEventListener("click", () => chooseSide(step, "attack"));
+
+			const defenseBtn = document.createElement("button");
+			defenseBtn.className = "btn btn-outline-info map-btn";
+			defenseBtn.innerHTML = `<i class="bi bi-shield"></i> ディフェンダー`;
+			defenseBtn.addEventListener("click", () => chooseSide(step, "defense"));
+
+			actionArea.appendChild(attackBtn);
+			actionArea.appendChild(defenseBtn);
+		}
+	}
+
+	function chooseSide(step, side) {
+		const mapInfo = state.results[step.slot];
+		mapInfo.sideTeam = step.team;
+		mapInfo.side = side;
+		const sideLabel = side === "attack" ? "アタッカー" : "ディフェンダー";
+		addLog(`<span class="badge bg-info text-dark me-2">SIDE</span>${teamLabel(step.team)} は Map${step.slot}（${mapInfo.map}）で <strong>${sideLabel}</strong> を選択`);
+		state.stepIndex++;
+		runStep();
+	}
+
+	function finishProcess() {
+		processArea.classList.add("d-none");
+		resultArea.classList.remove("d-none");
+
+		document.getElementById("attackHeader").textContent = "アタッカー側";
+		document.getElementById("defenseHeader").textContent = "ディフェンダー側";
+
+		const tbody = document.getElementById("resultTableBody");
+		tbody.innerHTML = "";
+
+		const slots = Object.keys(state.results).map(Number).sort((a, b) => a - b);
+		slots.forEach((slot) => {
+			const info = state.results[slot];
+			const sideTeam = info.sideTeam; // このチームが選んだ側
+			const otherTeam = sideTeam === "A" ? "B" : "A";
+
+			let attackTeam, defenseTeam;
+			if (info.side === "attack") {
+				attackTeam = sideTeam;
+				defenseTeam = otherTeam;
+			} else {
+				defenseTeam = sideTeam;
+				attackTeam = otherTeam;
+			}
+
+			const tr = document.createElement("tr");
+			tr.innerHTML = `
+				<td class="fw-bold">Map ${slot}</td>
+				<td class="map-result-name">${info.map}</td>
+				<td>${teamLabel(attackTeam)}</td>
+				<td>${teamLabel(defenseTeam)}</td>
+			`;
+			tbody.appendChild(tr);
+		});
+	}
+
+	function resetAll() {
+		startBtn.classList.remove("d-none");
+		restartBtn.classList.add("d-none");
+		processArea.classList.add("d-none");
+		logArea.classList.add("d-none");
+		resultArea.classList.add("d-none");
+		document.getElementById("formatSelect").disabled = false;
+		document.getElementById("teamAName").disabled = false;
+		document.getElementById("teamBName").disabled = false;
+	}
+
+	startBtn.addEventListener("click", startProcess);
+	restartBtn.addEventListener("click", resetAll);
+</script>
