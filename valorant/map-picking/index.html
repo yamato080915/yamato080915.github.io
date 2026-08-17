@@ -89,12 +89,36 @@ title: マップピック
 <style>
 	.map-btn {
 		min-width: 130px;
+		height: 64px;
+		background-size: cover;
+		background-position: center;
+		color: #fff;
+		text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+		font-weight: 600;
+		border-width: 2px;
 	}
+	.map-btn.map-btn-ban {
+		border-color: #dc3545;
+	}
+	.map-btn.map-btn-pick {
+		border-color: #0d6efd;
+	}
+	.map-btn:hover {
+		filter: brightness(1.15);
+		color: #fff;
+	}
+
 	.map-result-name {
+		position: relative;
+		background-size: cover;
+		background-position: center;
+		color: #fff;
+		text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 		font-family: "Squada One";
 		font-size: 1.4rem;
 		letter-spacing: 0.03em;
 	}
+
 	#logList .badge {
 		font-weight: 500;
 	}
@@ -102,6 +126,10 @@ title: マップピック
 
 <script>
 	const ALL_MAPS = ["Haven", "Lotus", "Split", "Sunset", "Breeze", "Summit", "Ascent"];
+
+	function mapBgStyle(map, tint) {
+		return `linear-gradient(${tint}, ${tint}), url('/valorant/static/${map.toLowerCase()}.png')`;
+	}
 
 	// VCT公式ルール(4.6.8 / 4.6.9)に基づく手順定義
 	// action: "ban" | "pick" | "side" | "remain"
@@ -203,7 +231,8 @@ title: マップピック
 			instructionText.innerHTML = `<span class="fw-bold">${teamLabel(step.team)}</span> は1マップをBANしてください`;
 			state.remaining.forEach((map) => {
 				const btn = document.createElement("button");
-				btn.className = "btn btn-outline-danger map-btn";
+				btn.className = "btn map-btn map-btn-ban";
+				btn.style.backgroundImage = mapBgStyle(map, "rgba(120,0,0,0.55)");
 				btn.textContent = map;
 				btn.addEventListener("click", () => {
 					state.remaining = state.remaining.filter((m) => m !== map);
@@ -217,7 +246,8 @@ title: マップピック
 			instructionText.innerHTML = `<span class="fw-bold">${teamLabel(step.team)}</span> はMap${step.slot}をPICKしてください`;
 			state.remaining.forEach((map) => {
 				const btn = document.createElement("button");
-				btn.className = "btn btn-outline-primary map-btn";
+				btn.className = "btn map-btn map-btn-pick";
+				btn.style.backgroundImage = mapBgStyle(map, "rgba(0,40,120,0.55)");
 				btn.textContent = map;
 				btn.addEventListener("click", () => {
 					state.remaining = state.remaining.filter((m) => m !== map);
@@ -290,12 +320,17 @@ title: マップピック
 			}
 
 			const tr = document.createElement("tr");
-			tr.innerHTML = `
-				<td class="fw-bold">Map ${slot}</td>
-				<td class="map-result-name">${info.map}</td>
+			const mapCell = document.createElement("td");
+			mapCell.className = "map-result-name";
+			mapCell.style.backgroundImage = mapBgStyle(info.map, "rgba(0,0,0,0.5)");
+			mapCell.textContent = info.map;
+
+			tr.innerHTML = `<td class="fw-bold">Map ${slot}</td>`;
+			tr.appendChild(mapCell);
+			tr.insertAdjacentHTML("beforeend", `
 				<td>${teamLabel(attackTeam)}</td>
 				<td>${teamLabel(defenseTeam)}</td>
-			`;
+			`);
 			tbody.appendChild(tr);
 		});
 	}
