@@ -1,0 +1,33 @@
+.map-btn {
+	min-width: 130px;
+	height: 64px;
+	background-size: cover;
+	background-position: center;
+	color: #fff;
+	text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+	font-weight: 600;
+	border-width: 2px;
+}
+.map-btn.map-btn-ban {
+	border-color: #dc3545;
+}
+.map-btn.map-btn-pick {
+	border-color: #0d6efd;
+}
+.map-btn:hover {
+	filter: brightness(1.15);
+	color: #fff;
+}
+.map-result-name {
+	position: relative;
+	background-size: cover;
+	background-position: center;
+	color: #fff;
+	text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+	font-family: "Squada One";
+	font-size: 1.4rem;
+	letter-spacing: 0.03em;
+}
+#logList .badge {
+	font-weight: 500;
+}
