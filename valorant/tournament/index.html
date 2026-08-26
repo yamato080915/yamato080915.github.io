@@ -1,0 +1,143 @@
+---
+layout: default
+css:
+  - /valorant/static/css/tournament.css
+title: VALORANT CUSTOM TOURNAMENT TOOL
+---
+
+<div id="tournament-app" class="tournament-app pb-5">
+	<section class="tournament-hero mb-4">
+		<div>
+			<p class="tournament-eyebrow mb-2">VALORANT CUSTOM TOURNAMENT TOOL</p>
+			<h1 class="display-6 fw-bold mb-2">カスタム大会進行ボード</h1>
+			<p class="mb-0 text-white-50">予選、トーナメント、総当たり戦をひとつの画面で管理します。</p>
+		</div>
+		<div class="hero-mark" aria-hidden="true"><i class="bi bi-trophy-fill"></i></div>
+	</section>
+
+	<div id="app-alert" class="alert d-none" role="alert"></div>
+
+	<section id="dashboard-screen">
+		<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+			<div>
+				<h2 class="h4 mb-1">大会一覧</h2>
+				<p class="text-muted mb-0">大会ごとに進行状況をこの端末へ保存します。</p>
+			</div>
+			<button type="button" class="btn btn-primary" id="show-create-btn">
+				<i class="bi bi-plus-lg me-1"></i>大会を作成
+			</button>
+		</div>
+
+		<div id="tournament-list" class="row g-3 mb-4"></div>
+
+		<div id="create-panel" class="card tournament-panel shadow-sm d-none">
+			<div class="card-body p-4">
+				<div class="d-flex justify-content-between align-items-start mb-4">
+					<div>
+						<p class="section-kicker mb-1">NEW EVENT</p>
+						<h2 class="h4 mb-0">新しい大会</h2>
+					</div>
+					<button type="button" class="btn-close" id="cancel-create-btn" aria-label="作成を閉じる"></button>
+				</div>
+
+				<form id="create-form" novalidate>
+					<div class="row g-3">
+						<div class="col-lg-6">
+							<label for="event-name" class="form-label fw-semibold">大会名</label>
+							<input type="text" class="form-control" id="event-name" maxlength="60" placeholder="例：VALORANT CUSTOM CUP" required>
+						</div>
+						<div class="col-lg-6">
+							<label for="event-format" class="form-label fw-semibold">大会形式</label>
+							<select class="form-select" id="event-format">
+								<option value="single">シングルエリミネーション</option>
+								<option value="double">ダブルエリミネーション</option>
+								<option value="round1">1回総当たり</option>
+								<option value="round2">2回総当たり</option>
+							</select>
+						</div>
+						<div class="col-lg-6">
+							<label for="base-bo" class="form-label fw-semibold">通常試合</label>
+							<select class="form-select" id="base-bo">
+								<option value="1">BO1</option>
+								<option value="3" selected>BO3</option>
+								<option value="5">BO5</option>
+							</select>
+						</div>
+						<div class="col-lg-6 knockout-option">
+							<label for="final-bo" class="form-label fw-semibold">決勝指定試合</label>
+							<select class="form-select" id="final-bo">
+								<option value="1">BO1</option>
+								<option value="3">BO3</option>
+								<option value="5" selected>BO5</option>
+							</select>
+							<div class="form-text">Grand Final、Lower Final、シングルの3位決定戦に適用</div>
+						</div>
+						<div class="col-12 single-option">
+							<div class="form-check form-switch">
+								<input class="form-check-input" type="checkbox" id="third-place" checked>
+								<label class="form-check-label" for="third-place">3位決定戦を行う</label>
+							</div>
+						</div>
+						<div class="col-12">
+							<label for="team-names" class="form-label fw-semibold">チーム名</label>
+							<textarea class="form-control team-textarea" id="team-names" rows="9" placeholder="1行に1チームずつ入力（2〜32チーム）" required></textarea>
+							<div class="d-flex justify-content-between mt-1">
+								<span class="form-text">入力順は組み合わせや順位に使用しません。</span>
+								<span class="form-text"><strong id="team-count-preview">0</strong> / 32</span>
+							</div>
+						</div>
+						<div class="col-md-6 knockout-option">
+							<label for="qualifier-count" class="form-label fw-semibold">本戦進出数</label>
+							<select class="form-select" id="qualifier-count"></select>
+						</div>
+						<div class="col-md-6 knockout-option">
+							<label for="prelim-mode" class="form-label fw-semibold">予選</label>
+							<select class="form-select" id="prelim-mode"></select>
+						</div>
+						<div class="col-md-6 knockout-option" id="block-count-wrap">
+							<label for="block-count" class="form-label fw-semibold">予選ブロック数</label>
+							<select class="form-select" id="block-count"></select>
+							<div class="form-text" id="block-count-hint"></div>
+						</div>
+					</div>
+
+					<div id="create-errors" class="alert alert-danger d-none mt-4 mb-0" role="alert"></div>
+					<div class="d-flex justify-content-end gap-2 mt-4">
+						<button type="button" class="btn btn-outline-secondary" id="cancel-create-secondary">キャンセル</button>
+						<button type="submit" class="btn btn-primary px-4">
+							<i class="bi bi-play-fill me-1"></i>大会を作成
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</section>
+
+	<section id="event-screen" class="d-none">
+		<div class="event-toolbar card shadow-sm mb-4">
+			<div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+				<div class="d-flex align-items-center gap-3">
+					<button type="button" class="btn btn-outline-secondary btn-sm" id="back-dashboard-btn">
+						<i class="bi bi-arrow-left"></i><span class="visually-hidden">大会一覧へ</span>
+					</button>
+					<div>
+						<div class="d-flex flex-wrap align-items-center gap-2">
+							<h2 class="h4 mb-0" id="event-title"></h2>
+							<span class="badge bg-dark" id="event-format-badge"></span>
+							<span class="badge bg-primary" id="event-phase-badge"></span>
+						</div>
+						<div class="small text-muted mt-1" id="event-summary"></div>
+					</div>
+				</div>
+				<div class="d-flex gap-2">
+					<button type="button" class="btn btn-outline-secondary btn-sm" id="reset-event-btn"><i class="bi bi-arrow-counterclockwise me-1"></i>リセット</button>
+					<button type="button" class="btn btn-outline-danger btn-sm" id="delete-event-btn"><i class="bi bi-trash me-1"></i>削除</button>
+				</div>
+			</div>
+		</div>
+
+		<div id="event-content"></div>
+	</section>
+</div>
+
+<script src="{{ '/valorant/static/js/tournament.js' | relative_url }}"></script>
