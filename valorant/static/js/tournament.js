@@ -123,10 +123,10 @@
 	}
 
 	function showAlert(message, type = "success") {
-		appAlert.className = `alert alert-${type}`;
+		appAlert.className = type === "danger" ? "notice notice-danger" : "notice notice-success";
 		appAlert.textContent = message;
-		appAlert.classList.remove("d-none");
-		window.setTimeout(() => appAlert.classList.add("d-none"), 4200);
+		appAlert.classList.remove("hidden");
+		window.setTimeout(() => appAlert.classList.add("hidden"), 4200);
 	}
 
 	function eventProgressText(event) {
@@ -145,8 +145,8 @@
 	}
 
 	function renderDashboard() {
-		dashboardScreen.classList.remove("d-none");
-		eventScreen.classList.add("d-none");
+		dashboardScreen.classList.remove("hidden");
+		eventScreen.classList.add("hidden");
 		activeEvent = null;
 		const index = loadIndex();
 		const validItems = [];
@@ -161,30 +161,30 @@
 
 		if (!validItems.length) {
 			tournamentList.innerHTML = `
-				<div class="col-12">
+				<div>
 					<div class="empty-events">
 						<i class="bi bi-diagram-3"></i>
-						<h3 class="h5">保存された大会はありません</h3>
-						<p class="text-muted mb-0">「大会を作成」から最初の大会を始めましょう。</p>
+						<h3 class="text-lg font-bold">保存された大会はありません</h3>
+						<p class="mb-0 text-slate-500">「大会を作成」から最初の大会を始めましょう。</p>
 					</div>
 				</div>`;
 			return;
 		}
 
 		tournamentList.innerHTML = validItems.map(({ event }) => `
-			<div class="col-md-6 col-xl-4">
-				<div class="card saved-event-card">
-					<div class="card-body p-4">
-						<div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+			<div class="min-w-0">
+				<div class="saved-event-card bg-white">
+					<div class="p-5">
+						<div class="mb-3 flex items-start justify-between gap-2">
 							<div>
-								<span class="badge bg-dark mb-2">${escapeHtml(formatLabel(event.format))}</span>
-								<h3 class="h5 mb-1">${escapeHtml(event.name)}</h3>
-								<div class="small text-muted">${event.teams.length}チーム・${escapeHtml(eventProgressText(event))}</div>
+								<span class="badge badge-neutral mb-2">${escapeHtml(formatLabel(event.format))}</span>
+								<h3 class="mb-1 text-lg font-bold">${escapeHtml(event.name)}</h3>
+								<div class="text-sm text-slate-500">${event.teams.length}チーム・${escapeHtml(eventProgressText(event))}</div>
 							</div>
-							<button type="button" class="btn btn-outline-danger btn-sm" data-action="delete-dashboard" data-event-id="${escapeHtml(event.id)}" aria-label="${escapeHtml(event.name)}を削除"><i class="bi bi-trash"></i></button>
+							<button type="button" class="button button-danger button-sm" data-action="delete-dashboard" data-event-id="${escapeHtml(event.id)}" aria-label="${escapeHtml(event.name)}を削除"><i class="bi bi-trash"></i></button>
 						</div>
-						<div class="small text-muted mb-3">最終更新 ${escapeHtml(formatDate(event.updatedAt))}</div>
-						<button type="button" class="btn btn-primary w-100" data-action="open-event" data-event-id="${escapeHtml(event.id)}">大会を再開</button>
+						<div class="mb-3 text-sm text-slate-500">最終更新 ${escapeHtml(formatDate(event.updatedAt))}</div>
+						<button type="button" class="button button-primary w-full" data-action="open-event" data-event-id="${escapeHtml(event.id)}">大会を再開</button>
 					</div>
 				</div>
 			</div>`).join("");
@@ -212,8 +212,8 @@
 			return;
 		}
 		activeEvent = event;
-		dashboardScreen.classList.add("d-none");
-		eventScreen.classList.remove("d-none");
+		dashboardScreen.classList.add("hidden");
+		eventScreen.classList.remove("hidden");
 		renderEvent();
 	}
 
@@ -222,14 +222,14 @@
 		document.getElementById("base-bo").value = "3";
 		document.getElementById("final-bo").value = "5";
 		document.getElementById("third-place").checked = true;
-		createErrors.classList.add("d-none");
-		createPanel.classList.remove("d-none");
+		createErrors.classList.add("hidden");
+		createPanel.classList.remove("hidden");
 		updateCreateOptions();
 		document.getElementById("event-name").focus();
 	}
 
 	function hideCreatePanel() {
-		createPanel.classList.add("d-none");
+		createPanel.classList.add("hidden");
 	}
 
 	function teamNamesFromInput() {
@@ -250,8 +250,8 @@
 		const format = formatSelect.value;
 		const knockout = format === "single" || format === "double";
 		const single = format === "single";
-		document.querySelectorAll(".knockout-option").forEach((el) => el.classList.toggle("d-none", !knockout));
-		document.querySelectorAll(".single-option").forEach((el) => el.classList.toggle("d-none", !single));
+		document.querySelectorAll(".knockout-option").forEach((el) => el.classList.toggle("hidden", !knockout));
+		document.querySelectorAll(".single-option").forEach((el) => el.classList.toggle("hidden", !single));
 
 		const names = teamNamesFromInput();
 		document.getElementById("team-count-preview").textContent = names.length;
@@ -287,7 +287,7 @@
 		const qualifierCount = Number(qualifierSelect.value);
 		const usePrelim = prelimModeSelect.value === "yes";
 		const wrap = document.getElementById("block-count-wrap");
-		wrap.classList.toggle("d-none", !usePrelim);
+		wrap.classList.toggle("hidden", !usePrelim);
 		if (!usePrelim) return;
 
 		const previous = Number(blockCountSelect.value);
@@ -409,7 +409,7 @@
 		const errors = validateCreateForm();
 		if (errors.length) {
 			createErrors.innerHTML = `<ul class="mb-0">${errors.map((error) => `<li>${escapeHtml(error)}</li>`).join("")}</ul>`;
-			createErrors.classList.remove("d-none");
+			createErrors.classList.remove("hidden");
 			return;
 		}
 
@@ -478,24 +478,24 @@
 		eventContent.innerHTML = `
 			<div class="phase-banner mb-4">
 				<p class="section-kicker mb-1">GROUP DRAW</p>
-				<h3 class="h5 mb-2">予選ブロックを確認</h3>
-				<p class="mb-0 text-muted">チームを別のチームへドラッグすると、所属ブロックを直接入れ替えられます。タッチ操作では2チームを順に選択してください。</p>
+				<h3 class="mb-2 text-lg font-bold">予選ブロックを確認</h3>
+				<p class="mb-0 text-slate-500">チームを別のチームへドラッグすると、所属ブロックを直接入れ替えられます。タッチ操作では2チームを順に選択してください。</p>
 			</div>
 			<div class="group-grid mb-4">
 				${activeEvent.groups.map((group) => `
-					<div class="card event-card shadow-sm">
-						<div class="card-header d-flex justify-content-between align-items-center">
+					<div class="panel event-card">
+						<div class="panel-header flex items-center justify-between">
 							<strong>${escapeHtml(group.name)}</strong>
-							<span class="badge bg-success">上位${activeEvent.settings.qualifierCount / activeEvent.settings.blockCount}チーム進出</span>
+							<span class="badge badge-success">上位${activeEvent.settings.qualifierCount / activeEvent.settings.blockCount}チーム進出</span>
 						</div>
-						<div class="card-body">
-							${group.teamIds.map((teamId) => `<div class="team-chip draggable-team" draggable="true" tabindex="0" role="button" aria-pressed="false" data-action="select-swap-item" data-drag-scope="group" data-team-id="${escapeHtml(teamId)}" aria-label="${escapeHtml(teamName(activeEvent, teamId))}を別のチームと入れ替え"><span class="d-flex align-items-center min-w-0"><i class="bi bi-grip-vertical drag-grip me-2" aria-hidden="true"></i><strong class="text-truncate">${escapeHtml(teamName(activeEvent, teamId))}</strong></span><span class="badge bg-light text-dark">DRAG</span></div>`).join("")}
+						<div class="panel-body">
+							${group.teamIds.map((teamId) => `<div class="team-chip draggable-team" draggable="true" tabindex="0" role="button" aria-pressed="false" data-action="select-swap-item" data-drag-scope="group" data-team-id="${escapeHtml(teamId)}" aria-label="${escapeHtml(teamName(activeEvent, teamId))}を別のチームと入れ替え"><span class="flex min-w-0 items-center"><i class="bi bi-grip-vertical drag-grip mr-2" aria-hidden="true"></i><strong class="truncate">${escapeHtml(teamName(activeEvent, teamId))}</strong></span><span class="badge badge-neutral">DRAG</span></div>`).join("")}
 						</div>
 					</div>`).join("")}
 			</div>
-			<div class="d-flex flex-wrap justify-content-between gap-2">
-				<button type="button" class="btn btn-outline-secondary" data-action="redraw-groups"><i class="bi bi-shuffle me-1"></i>再抽選</button>
-				<button type="button" class="btn btn-primary btn-lg" data-action="start-groups"><i class="bi bi-play-fill me-1"></i>予選を開始</button>
+			<div class="flex flex-wrap justify-between gap-2">
+				<button type="button" class="button button-secondary" data-action="redraw-groups"><i class="bi bi-shuffle"></i>再抽選</button>
+				<button type="button" class="button button-primary button-lg" data-action="start-groups"><i class="bi bi-play-fill"></i>予選を開始</button>
 			</div>`;
 	}
 
@@ -561,26 +561,26 @@
 			<div class="match-card ${complete ? "match-complete" : "match-ready"}" data-match-card="${escapeHtml(match.id)}">
 				<div class="match-heading">
 					<span>第${match.round}節${match.cycle > 1 ? `・第${match.cycle}戦` : ""}</span>
-					<span class="badge ${complete ? "bg-success" : "bg-primary"}">${complete ? `${analysis.winsA}-${analysis.winsB} 確定` : `BO${match.bestOf}`}</span>
+					<span class="badge ${complete ? "badge-success" : "badge-primary"}">${complete ? `${analysis.winsA}-${analysis.winsB} 確定` : `BO${match.bestOf}`}</span>
 				</div>
 				<div class="match-body">
-					<div class="d-flex justify-content-between gap-2 mb-2">
-						<strong class="text-truncate">${escapeHtml(teamA)}</strong><span>vs</span><strong class="text-truncate text-end">${escapeHtml(teamB)}</strong>
+					<div class="mb-2 flex justify-between gap-2">
+						<strong class="truncate">${escapeHtml(teamA)}</strong><span>vs</span><strong class="truncate text-right">${escapeHtml(teamB)}</strong>
 					</div>
 					${Array.from({ length: visibleMaps }, (_, index) => {
 						const map = match.maps[index];
 						return `<div class="map-score-row">
-							<span class="small text-muted">MAP ${index + 1}</span>
-							<input type="number" min="0" step="1" class="form-control form-control-sm" aria-label="${escapeHtml(teamA)} Map ${index + 1} ラウンド数" value="${escapeHtml(map.a)}" data-action="round-score" data-match-id="${escapeHtml(match.id)}" data-map-index="${index}" data-side="a" ${complete ? "disabled" : ""}>
+							<span class="text-xs text-slate-500">MAP ${index + 1}</span>
+							<input type="number" min="0" step="1" class="field-control py-1.5 text-sm" aria-label="${escapeHtml(teamA)} Map ${index + 1} ラウンド数" value="${escapeHtml(map.a)}" data-action="round-score" data-match-id="${escapeHtml(match.id)}" data-map-index="${index}" data-side="a" ${complete ? "disabled" : ""}>
 							<span class="text-center">-</span>
-							<input type="number" min="0" step="1" class="form-control form-control-sm" aria-label="${escapeHtml(teamB)} Map ${index + 1} ラウンド数" value="${escapeHtml(map.b)}" data-action="round-score" data-match-id="${escapeHtml(match.id)}" data-map-index="${index}" data-side="b" ${complete ? "disabled" : ""}>
+							<input type="number" min="0" step="1" class="field-control py-1.5 text-sm" aria-label="${escapeHtml(teamB)} Map ${index + 1} ラウンド数" value="${escapeHtml(map.b)}" data-action="round-score" data-match-id="${escapeHtml(match.id)}" data-map-index="${index}" data-side="b" ${complete ? "disabled" : ""}>
 						</div>`;
 					}).join("")}
 					${analysis.error ? `<div class="match-error">${escapeHtml(analysis.error)}</div>` : ""}
-					<div class="d-flex justify-content-end mt-3">
+					<div class="mt-3 flex justify-end">
 						${complete
-							? `<button type="button" class="btn btn-outline-secondary btn-sm" data-action="edit-round-match" data-match-id="${escapeHtml(match.id)}">結果を修正</button>`
-							: `<button type="button" class="btn btn-primary btn-sm" data-action="confirm-round-match" data-match-id="${escapeHtml(match.id)}" ${analysis.decided ? "" : "disabled"}>勝敗を確定</button>`}
+							? `<button type="button" class="button button-secondary button-sm" data-action="edit-round-match" data-match-id="${escapeHtml(match.id)}">結果を修正</button>`
+							: `<button type="button" class="button button-primary button-sm" data-action="confirm-round-match" data-match-id="${escapeHtml(match.id)}" ${analysis.decided ? "" : "disabled"}>勝敗を確定</button>`}
 					</div>
 				</div>
 			</div>`;
@@ -661,13 +661,13 @@
 	function renderStandings(teamIds, matches, qualifiedIds = new Set(), lotteryIds = new Set()) {
 		const standings = standingsFor(teamIds, matches);
 		return `
-			<div class="table-responsive">
-				<table class="table table-sm standing-table align-middle mb-0">
-					<thead class="table-light"><tr><th>順位</th><th>チーム</th><th>試合</th><th>勝</th><th>敗</th><th>マップ</th><th>差</th><th>ラウンド</th><th>差</th></tr></thead>
+			<div class="table-wrap">
+				<table class="data-table standing-table mb-0">
+					<thead><tr><th>順位</th><th>チーム</th><th>試合</th><th>勝</th><th>敗</th><th>マップ</th><th>差</th><th>ラウンド</th><th>差</th></tr></thead>
 					<tbody>${standings.map((entry) => `
 						<tr class="${qualifiedIds.has(entry.teamId) ? "qualified-row" : ""} ${lotteryIds.has(entry.teamId) ? "lottery-row" : ""}">
 							<td><span class="rank-number">${entry.rank}</span></td>
-							<td class="fw-semibold">${escapeHtml(teamName(activeEvent, entry.teamId))}${qualifiedIds.has(entry.teamId) ? ' <span class="badge bg-success ms-1">進出</span>' : ""}</td>
+							<td class="font-semibold">${escapeHtml(teamName(activeEvent, entry.teamId))}${qualifiedIds.has(entry.teamId) ? ' <span class="badge badge-success ml-1">進出</span>' : ""}</td>
 							<td>${entry.played}</td><td>${entry.wins}</td><td>${entry.losses}</td>
 							<td>${entry.mapWins}-${entry.mapLosses}</td><td>${signed(entry.mapDiff)}</td>
 							<td>${entry.roundsFor}-${entry.roundsAgainst}</td><td>${signed(entry.roundDiff)}</td>
@@ -685,19 +685,19 @@
 		eventContent.innerHTML = `
 			<div class="phase-banner mb-4">
 				<p class="section-kicker mb-1">QUALIFIERS</p>
-				<h3 class="h5 mb-2">予選総当たり</h3>
-				<p class="mb-0 text-muted">全試合の結果が確定すると、本戦進出チームと組み合わせを生成できます。</p>
+				<h3 class="mb-2 text-lg font-bold">予選総当たり</h3>
+				<p class="mb-0 text-slate-500">全試合の結果が確定すると、本戦進出チームと組み合わせを生成できます。</p>
 			</div>
 			${activeEvent.groups.map((group) => {
 				const matches = activeEvent.groupMatches.filter((match) => match.blockId === group.id);
-				return `<section class="card standing-card shadow-sm mb-4">
-					<div class="card-header d-flex justify-content-between align-items-center"><strong>${escapeHtml(group.name)}</strong><span class="badge bg-success">上位${activeEvent.settings.qualifierCount / activeEvent.settings.blockCount}チーム進出</span></div>
-					<div class="card-body">${renderStandings(group.teamIds, matches)}</div>
-					<div class="card-body border-top"><div class="row g-3">${matches.map((match) => `<div class="col-lg-6">${renderRoundRobinMatch(match)}</div>`).join("")}</div></div>
+				return `<section class="panel standing-card mb-4">
+					<div class="panel-header flex items-center justify-between gap-3"><strong>${escapeHtml(group.name)}</strong><span class="badge badge-success">上位${activeEvent.settings.qualifierCount / activeEvent.settings.blockCount}チーム進出</span></div>
+					<div class="panel-body">${renderStandings(group.teamIds, matches)}</div>
+					<div class="panel-body border-t border-slate-200"><div class="grid gap-3 lg:grid-cols-2">${matches.map((match) => `<div class="min-w-0">${renderRoundRobinMatch(match)}</div>`).join("")}</div></div>
 				</section>`;
 			}).join("")}
-			<div class="d-flex justify-content-end">
-				<button type="button" class="btn btn-primary btn-lg" data-action="finalize-groups" ${allComplete ? "" : "disabled"}><i class="bi bi-diagram-3 me-1"></i>本戦組み合わせを生成</button>
+			<div class="flex justify-end">
+				<button type="button" class="button button-primary button-lg" data-action="finalize-groups" ${allComplete ? "" : "disabled"}><i class="bi bi-diagram-3"></i>本戦組み合わせを生成</button>
 			</div>`;
 	}
 
@@ -800,23 +800,23 @@
 		eventContent.innerHTML = `
 			<div class="phase-banner mb-4">
 				<p class="section-kicker mb-1">MAIN DRAW</p>
-				<h3 class="h5 mb-2">本戦組み合わせを確認</h3>
-				<p class="mb-0 text-muted">チームを別のチームへドラッグすると、本戦枠を直接入れ替えられます。タッチ操作では2チームを順に選択してください。</p>
+				<h3 class="mb-2 text-lg font-bold">本戦組み合わせを確認</h3>
+				<p class="mb-0 text-slate-500">チームを別のチームへドラッグすると、本戦枠を直接入れ替えられます。タッチ操作では2チームを順に選択してください。</p>
 			</div>
 			${direct ? "" : `<div class="placement-rules mb-4">
 				<div class="placement-rules-icon"><i class="bi bi-stars" aria-hidden="true"></i></div>
 				<div><strong>予選結果を反映した推奨配置です</strong><p class="mb-0 mt-1">各ブロックの上位チームを優先し、同順位内を抽選したうえで、同じブロック同士が初戦で再戦しないよう可能な限り調整しています。必要な場合だけドラッグして変更してください。</p></div>
 			</div>`}
-			<div class="row g-4 mb-4">
-				<div class="col-12">
-					<div class="card event-card shadow-sm h-100"><div class="card-header"><strong>本戦枠</strong></div><div class="card-body slot-list">
-						${activeEvent.bracketSeeds.map((teamId, index) => `<div class="slot-row draggable-team" draggable="true" tabindex="0" role="button" aria-pressed="false" data-action="select-swap-item" data-drag-scope="bracket" data-team-id="${escapeHtml(teamId)}" data-position="${index}" aria-label="本戦枠${index + 1}の${escapeHtml(teamName(activeEvent, teamId))}を別のチームと入れ替え"><span class="slot-number">${index + 1}</span><span class="d-flex align-items-center min-w-0"><i class="bi bi-grip-vertical drag-grip me-2" aria-hidden="true"></i><strong class="text-truncate">${escapeHtml(teamName(activeEvent, teamId))}</strong></span></div>`).join("")}
+			<div class="mb-4 grid gap-4">
+				<div>
+					<div class="panel event-card h-full"><div class="panel-header"><strong>本戦枠</strong></div><div class="panel-body slot-list">
+						${activeEvent.bracketSeeds.map((teamId, index) => `<div class="slot-row draggable-team" draggable="true" tabindex="0" role="button" aria-pressed="false" data-action="select-swap-item" data-drag-scope="bracket" data-team-id="${escapeHtml(teamId)}" data-position="${index}" aria-label="本戦枠${index + 1}の${escapeHtml(teamName(activeEvent, teamId))}を別のチームと入れ替え"><span class="slot-number">${index + 1}</span><span class="flex min-w-0 items-center"><i class="bi bi-grip-vertical drag-grip mr-2" aria-hidden="true"></i><strong class="truncate">${escapeHtml(teamName(activeEvent, teamId))}</strong></span></div>`).join("")}
 					</div></div>
 				</div>
 			</div>
-			<div class="d-flex flex-wrap justify-content-between gap-2">
-				<div class="d-flex flex-wrap gap-2">${activeEvent.settings.usePrelim ? '<button type="button" class="btn btn-outline-warning" data-action="reopen-groups"><i class="bi bi-pencil me-1"></i>予選結果を修正</button>' : ""}${direct ? '<button type="button" class="btn btn-outline-secondary" data-action="redraw-bracket"><i class="bi bi-shuffle me-1"></i>再抽選</button>' : ""}</div>
-				<button type="button" class="btn btn-primary btn-lg" data-action="start-bracket"><i class="bi bi-play-fill me-1"></i>本戦を開始</button>
+			<div class="flex flex-wrap justify-between gap-2">
+				<div class="flex flex-wrap gap-2">${activeEvent.settings.usePrelim ? '<button type="button" class="button button-warning" data-action="reopen-groups"><i class="bi bi-pencil"></i>予選結果を修正</button>' : ""}${direct ? '<button type="button" class="button button-secondary" data-action="redraw-bracket"><i class="bi bi-shuffle"></i>再抽選</button>' : ""}</div>
+				<button type="button" class="button button-primary button-lg" data-action="start-bracket"><i class="bi bi-play-fill"></i>本戦を開始</button>
 			</div>`;
 	}
 
@@ -1006,13 +1006,13 @@
 		const complete = match.status === "complete";
 		const stateClass = complete ? "match-complete" : ready ? "match-ready" : "match-waiting";
 		return `<div class="match-card ${stateClass}">
-			<div class="match-heading"><span>${escapeHtml(match.label)}</span><span class="badge ${complete ? "bg-success" : ready ? "bg-primary" : "bg-secondary"}">${complete ? `${match.scoreA}-${match.scoreB}` : ready ? `BO${match.bestOf}` : "待機中"}</span></div>
+			<div class="match-heading"><span>${escapeHtml(match.label)}</span><span class="badge ${complete ? "badge-success" : ready ? "badge-primary" : "badge-neutral"}">${complete ? `${match.scoreA}-${match.scoreB}` : ready ? `BO${match.bestOf}` : "待機中"}</span></div>
 			<div class="match-body">
-				<div class="match-team ${complete && match.winnerId === teamAId ? "winner" : ""}"><span class="match-team-name">${escapeHtml(teamName(activeEvent, teamAId))}</span><input type="number" min="0" class="form-control form-control-sm text-center" value="${escapeHtml(match.scoreA)}" data-action="bracket-score" data-match-id="${escapeHtml(match.id)}" data-side="A" ${!ready || complete ? "disabled" : ""}></div>
-				<div class="match-team ${complete && match.winnerId === teamBId ? "winner" : ""}"><span class="match-team-name">${escapeHtml(teamName(activeEvent, teamBId))}</span><input type="number" min="0" class="form-control form-control-sm text-center" value="${escapeHtml(match.scoreB)}" data-action="bracket-score" data-match-id="${escapeHtml(match.id)}" data-side="B" ${!ready || complete ? "disabled" : ""}></div>
-				<div class="d-flex justify-content-end mt-3">${complete
-					? `<button type="button" class="btn btn-outline-secondary btn-sm" data-action="edit-bracket-match" data-match-id="${escapeHtml(match.id)}">結果を修正</button>`
-					: `<button type="button" class="btn btn-primary btn-sm" data-action="confirm-bracket-match" data-match-id="${escapeHtml(match.id)}" ${ready ? "" : "disabled"}>勝敗を確定</button>`}</div>
+				<div class="match-team ${complete && match.winnerId === teamAId ? "winner" : ""}"><span class="match-team-name">${escapeHtml(teamName(activeEvent, teamAId))}</span><input type="number" min="0" class="field-control py-1.5 text-center text-sm" value="${escapeHtml(match.scoreA)}" data-action="bracket-score" data-match-id="${escapeHtml(match.id)}" data-side="A" ${!ready || complete ? "disabled" : ""}></div>
+				<div class="match-team ${complete && match.winnerId === teamBId ? "winner" : ""}"><span class="match-team-name">${escapeHtml(teamName(activeEvent, teamBId))}</span><input type="number" min="0" class="field-control py-1.5 text-center text-sm" value="${escapeHtml(match.scoreB)}" data-action="bracket-score" data-match-id="${escapeHtml(match.id)}" data-side="B" ${!ready || complete ? "disabled" : ""}></div>
+				<div class="mt-3 flex justify-end">${complete
+					? `<button type="button" class="button button-secondary button-sm" data-action="edit-bracket-match" data-match-id="${escapeHtml(match.id)}">結果を修正</button>`
+					: `<button type="button" class="button button-primary button-sm" data-action="confirm-bracket-match" data-match-id="${escapeHtml(match.id)}" ${ready ? "" : "disabled"}>勝敗を確定</button>`}</div>
 			</div>
 		</div>`;
 	}
@@ -1028,7 +1028,7 @@
 			}
 			group.matches.push(match);
 		});
-		return `<section class="mb-4"><h3 class="h5 mb-3">${escapeHtml(title)}</h3><div class="bracket-scroll"><div class="bracket-lane">${groups.map((group) => `<div class="bracket-round"><div class="bracket-round-title">${escapeHtml(group.name)}</div>${group.matches.map(renderBracketMatch).join("")}</div>`).join("")}</div></div></section>`;
+		return `<section class="mb-4"><h3 class="mb-3 text-lg font-bold">${escapeHtml(title)}</h3><div class="bracket-scroll"><div class="bracket-lane">${groups.map((group) => `<div class="bracket-round"><div class="bracket-round-title">${escapeHtml(group.name)}</div>${group.matches.map(renderBracketMatch).join("")}</div>`).join("")}</div></div></section>`;
 	}
 
 	function renderBracket() {
@@ -1039,7 +1039,7 @@
 		activeEvent.phase = tournamentComplete ? "complete" : "bracket";
 		const champion = grandFinal && grandFinal.status === "complete" ? grandFinal.winnerId : null;
 		eventContent.innerHTML = `
-			${champion ? `<div class="champion-card mb-4"><p class="section-kicker mb-2">CHAMPION</p><div class="winner-name"><i class="bi bi-trophy-fill text-warning me-2"></i>${escapeHtml(teamName(activeEvent, champion))}</div><p class="text-white-50 mb-0 mt-2">${escapeHtml(activeEvent.name)} 優勝</p></div>` : `<div class="phase-banner mb-4"><p class="section-kicker mb-1">PLAYOFFS</p><h3 class="h5 mb-2">本戦</h3><p class="mb-0 text-muted">対戦相手が確定した試合から結果を入力できます。</p></div>`}
+			${champion ? `<div class="champion-card mb-4"><p class="section-kicker mb-2">CHAMPION</p><div class="winner-name"><i class="bi bi-trophy-fill mr-2 text-amber-400"></i>${escapeHtml(teamName(activeEvent, champion))}</div><p class="mb-0 mt-2 text-white/60">${escapeHtml(activeEvent.name)} 優勝</p></div>` : `<div class="phase-banner mb-4"><p class="section-kicker mb-1">PLAYOFFS</p><h3 class="mb-2 text-lg font-bold">本戦</h3><p class="mb-0 text-slate-500">対戦相手が確定した試合から結果を入力できます。</p></div>`}
 			${renderBracketSection(
 				activeEvent.format === "double" ? "Upper Bracket" : "Tournament Bracket",
 				activeEvent.format === "double"
@@ -1048,7 +1048,7 @@
 			)}
 			${renderBracketSection("Lower Bracket", matches.filter((match) => match.section === "lower"))}
 			${renderBracketSection("順位決定戦", matches.filter((match) => match.section === "placement"))}
-			${activeEvent.settings.usePrelim ? '<div class="mt-4"><button type="button" class="btn btn-outline-warning" data-action="reopen-groups"><i class="bi bi-pencil me-1"></i>予選結果を修正</button></div>' : ""}`;
+			${activeEvent.settings.usePrelim ? '<div class="mt-4"><button type="button" class="button button-warning" data-action="reopen-groups"><i class="bi bi-pencil"></i>予選結果を修正</button></div>' : ""}`;
 		if (activeEvent.phase === "complete") saveEvent(activeEvent);
 	}
 
@@ -1066,13 +1066,13 @@
 			saveEvent(activeEvent);
 		}
 		eventContent.innerHTML = `
-			<div class="phase-banner mb-4"><p class="section-kicker mb-1">ROUND ROBIN</p><h3 class="h5 mb-2">総当たり戦</h3><p class="mb-0 text-muted">${completed}/${activeEvent.leagueMatches.length}試合が確定しています。</p></div>
-			<section class="card standing-card shadow-sm mb-4"><div class="card-header"><strong>順位表</strong></div><div class="card-body">${renderStandings(activeEvent.teams.map((team) => team.id), activeEvent.leagueMatches)}</div></section>
-			<section><h3 class="h5 mb-3">対戦日程</h3>${[...rounds.entries()].map(([key, matches], index) => {
+			<div class="phase-banner mb-4"><p class="section-kicker mb-1">ROUND ROBIN</p><h3 class="mb-2 text-lg font-bold">総当たり戦</h3><p class="mb-0 text-slate-500">${completed}/${activeEvent.leagueMatches.length}試合が確定しています。</p></div>
+			<section class="panel standing-card mb-4"><div class="panel-header"><strong>順位表</strong></div><div class="panel-body">${renderStandings(activeEvent.teams.map((team) => team.id), activeEvent.leagueMatches)}</div></section>
+			<section><h3 class="mb-3 text-lg font-bold">対戦日程</h3>${[...rounds.entries()].map(([key, matches], index) => {
 				const [cycle, round] = key.split("-");
 				const groupComplete = matches.every((match) => match.status === "complete");
 				const shouldOpen = !groupComplete && [...rounds.entries()].slice(0, index).every(([, prior]) => prior.every((match) => match.status === "complete"));
-				return `<details class="card event-card shadow-sm mb-3" ${shouldOpen || allComplete ? "open" : ""}><summary class="card-header d-flex justify-content-between align-items-center"><strong>第${round}節${Number(cycle) > 1 ? `・第${cycle}戦` : ""}</strong><span class="badge ${groupComplete ? "bg-success" : "bg-secondary"}">${matches.filter((match) => match.status === "complete").length}/${matches.length}</span></summary><div class="card-body"><div class="row g-3">${matches.map((match) => `<div class="col-lg-6">${renderRoundRobinMatch(match)}</div>`).join("")}</div></div></details>`;
+				return `<details class="panel event-card mb-3" ${shouldOpen || allComplete ? "open" : ""}><summary class="panel-header flex cursor-pointer items-center justify-between"><strong>第${round}節${Number(cycle) > 1 ? `・第${cycle}戦` : ""}</strong><span class="badge ${groupComplete ? "badge-success" : "badge-neutral"}">${matches.filter((match) => match.status === "complete").length}/${matches.length}</span></summary><div class="panel-body"><div class="grid gap-3 lg:grid-cols-2">${matches.map((match) => `<div class="min-w-0">${renderRoundRobinMatch(match)}</div>`).join("")}</div></div></details>`;
 			}).join("")}</section>`;
 	}
 

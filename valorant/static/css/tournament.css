@@ -394,7 +394,7 @@
 		font-size: 3.5rem;
 	}
 
-	.event-toolbar .card-body {
+	.event-toolbar .panel-body {
 		align-items: flex-start !important;
 	}
 

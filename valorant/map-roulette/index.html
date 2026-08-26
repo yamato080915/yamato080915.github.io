@@ -1,50 +1,13 @@
 ---
 layout: default
-css:
-  - /valorant/static/css/map-roulette.css
 title: マップルーレット
 ---
-<h1 class="text-center mb-4">マップルーレット</h1>
 
-<div class="row justify-content-center mb-4">
-	<div class="col-lg-8">
-		<div class="card shadow-sm">
-			<div class="card-body">
-				<h5 class="card-title mb-3"><i class="bi bi-slash-circle"></i> BANするマップを選択</h5>
-				<div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2" id="mapList">
-					<!-- チェックボックスはJSで生成 -->
-				</div>
-			</div>
-		</div>
-	</div>
+<div class="mx-auto max-w-5xl">
+	<h1 class="page-title mb-8 text-center">マップルーレット</h1>
+	<section class="panel"><div class="panel-header flex items-center gap-2"><i class="bi bi-slash-circle text-valorant" aria-hidden="true"></i>BANするマップを選択</div><div class="panel-body"><div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4" id="mapList"></div></div></section>
+	<div class="my-6 flex flex-wrap justify-center gap-3"><button type="button" class="button button-primary button-lg" id="pickBtn"><i class="bi bi-shuffle" aria-hidden="true"></i>マップを選ぶ</button><button type="button" class="button button-secondary button-lg" id="resetBtn"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>BANをリセット</button></div>
+	<section class="panel"><div class="panel-body py-10 text-center sm:py-14"><div class="slot-window mx-auto" id="slotWindow"><div class="slot-strip" id="slotStrip"><div class="slot-item">?</div></div></div><p class="mt-5 text-sm text-slate-500" id="hintText">「マップを選ぶ」ボタンを押してください</p></div></section>
 </div>
 
-<div class="row justify-content-center mb-4">
-	<div class="col-lg-8 d-flex justify-content-center gap-2">
-		<button type="button" class="btn btn-primary btn-lg" id="pickBtn">
-			<i class="bi bi-shuffle"></i> マップを選ぶ
-		</button>
-		<button type="button" class="btn btn-outline-secondary btn-lg" id="resetBtn">
-			<i class="bi bi-arrow-counterclockwise"></i> BANをリセット
-		</button>
-	</div>
-</div>
-
-<div class="row justify-content-center">
-	<div class="col-lg-8">
-		<div class="card shadow-sm">
-			<div class="card-body py-5">
-				<div class="slot-window mx-auto" id="slotWindow">
-					<div class="slot-strip" id="slotStrip">
-						<div class="slot-item">?</div>
-					</div>
-				</div>
-				<div class="text-center mt-3">
-					<span class="text-muted" id="hintText">「マップを選ぶ」ボタンを押してください</span>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-
-<script src="/valorant/static/js/map-roulette.js"></script>
+<script src="{{ '/valorant/static/js/map-roulette.js' | relative_url }}"></script>

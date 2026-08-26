@@ -39,13 +39,13 @@ function updatePlayerList() {
 	list.innerHTML = '';
 	players.forEach((p, index) => {
 		const li = document.createElement('li');
-		li.className = 'list-group-item d-flex justify-content-between align-items-center';
+		li.className = 'list-item flex items-center justify-between gap-3';
 		li.innerHTML = `
-			<span><strong>${p.name}</strong> <span class="badge bg-secondary ms-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'bg-success' : 'bg-danger'} ms-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
+			<span><strong>${p.name}</strong> <span class="badge badge-neutral ml-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'badge-success' : 'badge-danger'} ml-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
 		`;
 
 		const delBtn = document.createElement('button');
-		delBtn.className = 'btn btn-danger btn-sm';
+		delBtn.className = 'button button-danger button-sm shrink-0';
 		delBtn.textContent = '削除';
 		delBtn.onclick = () => {
 			if (lastTeams) {
@@ -95,13 +95,13 @@ function updateStandbyList() {
 	list.innerHTML = '';
 	standbyPlayers.forEach((p, index) => {
 		const li = document.createElement('li');
-		li.className = 'list-group-item d-flex justify-content-between align-items-center';
+		li.className = 'list-item flex items-center justify-between gap-3';
 		li.innerHTML = `
-			<span><strong>${p.name}</strong> <span class="badge bg-secondary ms-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'bg-success' : 'bg-danger'} ms-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
+			<span><strong>${p.name}</strong> <span class="badge badge-neutral ml-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'badge-success' : 'badge-danger'} ml-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
 		`;
 
 		const delBtn = document.createElement('button');
-		delBtn.className = 'btn btn-danger btn-sm';
+		delBtn.className = 'button button-danger button-sm shrink-0';
 		delBtn.textContent = '削除';
 		delBtn.onclick = () => {
 			standbyPlayers.splice(index, 1);
@@ -121,26 +121,26 @@ function renderTeams(teams) {
 
 	teams.forEach((t, i) => {
 		const col = document.createElement('div');
-		col.className = 'col-lg-6 mb-3';
+		col.className = 'min-w-0';
 		const vcNoneCount = t.members.filter(m => !m.vc).length;
 		const card = document.createElement('div');
-		card.className = 'card h-100';
+		card.className = 'panel h-full';
 		card.innerHTML = `
-			<div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-				<span>チーム ${i + 1} <span class="badge bg-secondary ms-2">VCなし: ${vcNoneCount}人</span></span>
-				<span class="badge bg-primary rounded-pill">合計 ${t.totalPoints} pts</span>
+			<div class="flex items-center justify-between gap-3 bg-slate-950 px-5 py-4 font-semibold text-white">
+				<span>チーム ${i + 1} <span class="badge bg-white/15 text-white ml-2">VCなし: ${vcNoneCount}人</span></span>
+				<span class="badge bg-brand-500 text-white">合計 ${t.totalPoints} pts</span>
 			</div>
-			<ul class="list-group list-group-flush">
+			<ul class="list">
 				${t.members.map((m, mi) => `
-				<li class="list-group-item d-flex justify-content-between align-items-center">
+				<li class="list-item flex flex-wrap items-center justify-between gap-3">
 					${m.name}
-					<div>
-						<span class="badge ${m.vc ? 'bg-success' : 'bg-danger'} me-1">${m.vc ? 'VCあり' : 'VCなし'}</span>
-						<span class="badge bg-light text-dark border me-1">${m.tier} ${m.div} (${m.point}pts)</span>
-						<button type="button" class="btn btn-outline-danger btn-sm leave-btn" data-team="${i}" data-member="${mi}">退出</button>
+					<div class="flex flex-wrap items-center gap-2">
+						<span class="badge ${m.vc ? 'badge-success' : 'badge-danger'}">${m.vc ? 'VCあり' : 'VCなし'}</span>
+						<span class="badge badge-neutral">${m.tier} ${m.div} (${m.point}pts)</span>
+						<button type="button" class="button button-danger button-sm leave-btn" data-team="${i}" data-member="${mi}">退出</button>
 					</div>
 				</li>`).join('')}
-				${t.members.length === 0 ? '<li class="list-group-item text-muted text-center">メンバーがいません</li>' : ''}
+				${t.members.length === 0 ? '<li class="list-item text-center text-slate-500">メンバーがいません</li>' : ''}
 			</ul>
 		`;
 		col.appendChild(card);
@@ -364,7 +364,7 @@ document.getElementById('shuffle-btn').addEventListener('click', function() {
 	const resetBtn = document.createElement('button');
 	resetBtn.type = 'button';
 	resetBtn.id = 'reset-teams-btn';
-	resetBtn.className = 'btn btn-outline-secondary ms-2';
+	resetBtn.className = 'button button-secondary';
 	resetBtn.textContent = 'チーム分けをリセット';
 	resetBtn.addEventListener('click', function() {
 		if (!lastTeams) {

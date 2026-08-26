@@ -1,4 +1,4 @@
-#mapList .form-check {
+#mapList .map-option {
 	position: relative;
 	border: 2px solid rgba(128,128,128,0.3);
 	border-radius: 0.5rem;
@@ -10,30 +10,30 @@
 	display: flex;
 	align-items: center;
 }
-#mapList .form-check-tint {
+#mapList .map-option-tint {
 	position: absolute;
 	inset: 0;
 	background: rgba(0,0,0,0.45);
 	transition: background-color 0.15s ease;
 	z-index: 0;
 }
-#mapList .form-check-input,
-#mapList .form-check-label {
+#mapList .map-option-input,
+#mapList .map-option-label {
 	position: relative;
 	z-index: 1;
 }
-#mapList .form-check-label {
+#mapList .map-option-label {
 	color: #fff;
 	text-shadow: 0 1px 3px rgba(0,0,0,0.9);
 	font-weight: 600;
 }
-#mapList .form-check-input:checked ~ .form-check-label {
+#mapList .map-option-input:checked ~ .map-option-label {
 	text-decoration: line-through;
 }
-#mapList .form-check.banned {
+#mapList .map-option.banned {
 	border-color: rgba(255,0,0,0.7);
 }
-#mapList .form-check.banned .form-check-tint {
+#mapList .map-option.banned .map-option-tint {
 	background: rgba(180,0,0,0.6);
 }
 

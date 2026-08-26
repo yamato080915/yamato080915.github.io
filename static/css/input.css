@@ -1,0 +1,93 @@
+@import "tailwindcss" source("../..");
+@source not "../../_site";
+@source not "../../node_modules";
+@source not "../../.jekyll-cache";
+@import "../../valorant/static/css/tournament.css";
+@import "../../valorant/static/css/map-roulette.css";
+@import "../../valorant/static/css/ban-pick.css";
+
+@theme {
+	--color-brand-50: #eff6ff;
+	--color-brand-100: #dbeafe;
+	--color-brand-500: #2563eb;
+	--color-brand-600: #1d4ed8;
+	--color-brand-700: #1e40af;
+	--color-valorant: #e5484d;
+	--color-valorant-dark: #bd3039;
+	--font-sans: "Inter", "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+	--font-rating: "Squada One", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+	:root { color-scheme: light; }
+	html { scroll-behavior: smooth; }
+	body { @apply min-h-screen bg-slate-50 font-sans text-slate-800 antialiased; }
+	a { @apply transition-colors; }
+	button, input, select, textarea { font: inherit; }
+	button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { @apply outline-2 outline-offset-2 outline-brand-600; }
+	button:disabled, input:disabled, select:disabled, textarea:disabled { @apply cursor-not-allowed opacity-55; }
+}
+
+@layer components {
+	.site-shell { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+	.eyebrow { @apply text-xs font-bold uppercase tracking-[0.18em] text-brand-600; }
+	.page-title { @apply text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl; }
+	.section-title { @apply text-2xl font-bold tracking-tight text-slate-950; }
+	.panel { @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm; }
+	.panel-header { @apply border-b border-slate-200 px-5 py-4 font-semibold text-slate-950; }
+	.panel-body { @apply p-5 sm:p-6; }
+	.button { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50; }
+	.button-primary { @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700 focus-visible:outline-brand-600; }
+	.button-secondary { @apply border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50 focus-visible:outline-slate-600; }
+	.button-danger { @apply border border-red-200 bg-white text-red-700 hover:bg-red-50 focus-visible:outline-red-600; }
+	.button-success { @apply bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:outline-emerald-600; }
+	.button-warning { @apply border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 focus-visible:outline-amber-600; }
+	.button-info { @apply border border-cyan-300 bg-cyan-50 text-cyan-800 hover:bg-cyan-100 focus-visible:outline-cyan-600; }
+	.button-sm { @apply min-h-9 rounded-lg px-3 py-1.5 text-xs; }
+	.button-lg { @apply min-h-12 px-5 py-3 text-base; }
+	.field-label { @apply mb-1.5 block text-sm font-semibold text-slate-700; }
+	.field-control { @apply block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 shadow-sm placeholder:text-slate-400 hover:border-slate-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100; }
+	.field-help { @apply mt-1.5 text-xs leading-relaxed text-slate-500; }
+	.badge { @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold; }
+	.badge-neutral { @apply bg-slate-100 text-slate-700; }
+	.badge-primary { @apply bg-brand-100 text-brand-700; }
+	.badge-success { @apply bg-emerald-100 text-emerald-800; }
+	.badge-danger { @apply bg-red-100 text-red-800; }
+	.badge-warning { @apply bg-amber-100 text-amber-800; }
+	.notice { @apply rounded-xl border px-4 py-3 text-sm font-medium; }
+	.notice-success { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
+	.notice-danger { @apply border-red-200 bg-red-50 text-red-800; }
+	.table-wrap { @apply overflow-x-auto rounded-xl border border-slate-200; }
+	.data-table { @apply min-w-full border-collapse text-sm; }
+	.data-table thead { @apply bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600; }
+	.data-table th, .data-table td { @apply border-b border-slate-200 px-4 py-3 align-middle; }
+	.data-table tbody tr:last-child > * { @apply border-b-0; }
+	.data-table tbody tr:hover { @apply bg-slate-50; }
+	.list { @apply divide-y divide-slate-200; }
+	.list-item { @apply px-4 py-3; }
+	.close-button { @apply grid size-9 place-items-center rounded-lg text-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900; }
+	.sr-only { @apply absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0 [clip:rect(0,0,0,0)]; }
+}
+
+.compressed-text { display: inline-block; overflow: hidden; white-space: nowrap; }
+.ratingf { font-family: var(--font-rating); }
+.gray { color: #64748b; }
+.brown { color: #92400e; }
+.green { color: #15803d; }
+.cyan { color: #0891b2; }
+.blue { color: #2563eb; }
+.yellow { color: #a16207; }
+.orange { color: #ea580c; }
+.red { color: #dc2626; }
+.grayb { border-color: rgb(100 116 139 / 0.45) !important; }
+.brownb { border-color: rgb(146 64 14 / 0.45) !important; }
+.greenb { border-color: rgb(21 128 61 / 0.45) !important; }
+.cyanb { border-color: rgb(8 145 178 / 0.45) !important; }
+.blueb { border-color: rgb(37 99 235 / 0.45) !important; }
+.yellowb { border-color: rgb(161 98 7 / 0.45) !important; }
+.orangeb { border-color: rgb(234 88 12 / 0.45) !important; }
+.redb { border-color: rgb(220 38 38 / 0.45) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+	*, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}

@@ -4,3 +4,5 @@ Gemfile.lock
 _site
 team-shuffle/memo
 AGENTS.md
+node_modules
+.pnpm-store

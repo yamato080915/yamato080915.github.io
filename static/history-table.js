@@ -38,17 +38,17 @@ function tabler(type) {
 				: `${diff}`;
 			tr.innerHTML = `
 				<td>${contest["Day"]}</td>
-				<td class="text-start">
-					<a class="text-decoration-none" href="${url}${contestname}">${contest["ContestName"]}</a>
-					${type==="atcoder" ? `<a class="link-dark text-decoration-none" href="${url}${contestname}/submissions?f.User=Yamato0915"><i class="bi bi-search"></i></a>` : ""}
+				<td class="text-left">
+					<a class="font-medium text-brand-700 hover:text-brand-600 hover:underline" href="${url}${contestname}">${contest["ContestName"]}</a>
+					${type==="atcoder" ? `<a class="ml-2 text-slate-500 hover:text-slate-900" href="${url}${contestname}/submissions?f.User=Yamato0915"><i class="bi bi-search"></i></a>` : ""}
 				</td>
-				<td><a class="text-decoration-none" href="${url}${contestname}/standings?watching=Yamato0915">${contest["Place"]}</a></td>
+				<td><a class="font-medium text-brand-700 hover:underline" href="${url}${contestname}/standings?watching=Yamato0915">${contest["Place"]}</a></td>
 				<td class="${rank(contest["Performance"])}">${contest["Performance"]}</td>
 				<td class="${rank(contest["NewRating"])}">${contest["NewRating"]}</td>
 				<td>
 					${diffText}
 				</td>
-				${type==="atcoder" ? `<td><a href="https://atcoder.jp/users/Yamato0915/history/share/${contestname}"><i class="bi bi-share-fill"></i></a></td>` : ""}
+				${type==="atcoder" ? `<td><a class="text-slate-500 hover:text-brand-600" href="https://atcoder.jp/users/Yamato0915/history/share/${contestname}"><i class="bi bi-share-fill"></i></a></td>` : ""}
 			`
 			tbody.appendChild(tr)
 		};

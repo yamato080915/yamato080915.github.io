@@ -3,36 +3,20 @@ layout: default
 title: コンテスト成績表
 ---
 
-<div class="container mt-5">
-	<h3 class="mb-3" id="title"></h3>
-	<table id="table" class="table table-striped table-bordered text-center table-hover">
-		<thead>
-			<tr id="theadtr">
-				<th width="20%" scope="col">
-					日付
-					<i id="daysort" class="bi bi-sort-down"></i>
-				</th>
+<section>
+	<h1 class="page-title mb-8" id="title"></h1>
+	<div class="table-wrap bg-white shadow-sm">
+		<table id="table" class="data-table text-center">
+			<thead><tr id="theadtr">
+				<th width="20%" scope="col">日付 <i id="daysort" class="bi bi-sort-down" aria-hidden="true"></i></th>
 				<th width="35%" scope="col">コンテスト</th>
-				<th scope="col">
-					順位
-					<i id="placesort" class="bi bi-arrow-down-up"></i>
-				</th>
-				<th scope="col">
-					パフォーマンス
-					<i id="perfsort" class="bi bi-arrow-down-up"></i>
-				</th>
-				<th scope="col">
-					新レーティング
-					<i id="ratesort" class="bi bi-arrow-down-up"></i>
-				</th>
-				<th scope="col">
-					差分
-					<i id="diffsort" class="bi bi-arrow-down-up"></i>
-				</th>
-			</tr>
-		</thead>
-		<tbody id="tbody">
-		</tbody>
-	</table>
-</div>
+				<th scope="col">順位 <i id="placesort" class="bi bi-arrow-down-up" aria-hidden="true"></i></th>
+				<th scope="col">パフォーマンス <i id="perfsort" class="bi bi-arrow-down-up" aria-hidden="true"></i></th>
+				<th scope="col">新レーティング <i id="ratesort" class="bi bi-arrow-down-up" aria-hidden="true"></i></th>
+				<th scope="col">差分 <i id="diffsort" class="bi bi-arrow-down-up" aria-hidden="true"></i></th>
+			</tr></thead>
+			<tbody id="tbody"></tbody>
+		</table>
+	</div>
+</section>
 {{ content }}

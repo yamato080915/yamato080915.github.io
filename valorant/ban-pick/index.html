@@ -1,91 +1,19 @@
 ---
 layout: default
-css:
-  - /valorant/static/css/ban-pick.css
 title: バンピック
 ---
 
-<h1 class="text-center mb-4">バンピック</h1>
-<h3 class="text-center mb-4">マップ：V26: Act4</h3>
+<div class="mx-auto max-w-5xl">
+	<div class="mb-8 text-center"><h1 class="page-title">バンピック</h1><h3 class="mt-4 text-xl font-semibold text-slate-700">マップ：V26: Act4</h3></div>
+	<section class="panel"><div class="panel-body"><div class="grid items-end gap-4 md:grid-cols-3">
+		<div><label class="field-label" for="formatSelect">フォーマット</label><select class="field-control" id="formatSelect"><option value="bo3">Best of 3</option><option value="bo5">Best of 5</option></select></div>
+		<div><label class="field-label" for="teamAName">Team A (上位シード)</label><input type="text" class="field-control" id="teamAName" placeholder="Team A" value="Team A"></div>
+		<div><label class="field-label" for="teamBName">Team B</label><input type="text" class="field-control" id="teamBName" placeholder="Team B" value="Team B"></div>
+	</div><div class="mt-6 flex flex-wrap justify-center gap-3"><button type="button" class="button button-primary button-lg" id="startBtn"><i class="bi bi-play-fill" aria-hidden="true"></i>バンピックを開始</button><button type="button" class="button button-secondary button-lg hidden" id="restartBtn"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>やり直す</button></div></div></section>
 
-<div class="row justify-content-center mb-4">
-	<div class="col-lg-8">
-		<div class="card shadow-sm">
-			<div class="card-body">
-				<div class="row g-3 align-items-end">
-					<div class="col-md-4">
-						<label class="form-label fw-bold">フォーマット</label>
-						<select class="form-select" id="formatSelect">
-							<option value="bo3">Best of 3</option>
-							<option value="bo5">Best of 5</option>
-						</select>
-					</div>
-					<div class="col-md-4">
-						<label class="form-label fw-bold">Team A (上位シード)</label>
-						<input type="text" class="form-control" id="teamAName" placeholder="Team A" value="Team A">
-					</div>
-					<div class="col-md-4">
-						<label class="form-label fw-bold">Team B</label>
-						<input type="text" class="form-control" id="teamBName" placeholder="Team B" value="Team B">
-					</div>
-				</div>
-				<div class="text-center mt-3">
-					<button type="button" class="btn btn-primary btn-lg" id="startBtn">
-						<i class="bi bi-play-fill"></i> バンピックを開始
-					</button>
-					<button type="button" class="btn btn-outline-secondary btn-lg d-none" id="restartBtn">
-						<i class="bi bi-arrow-counterclockwise"></i> やり直す
-					</button>
-				</div>
-			</div>
-		</div>
-	</div>
+	<section class="panel mt-6 hidden border-brand-500/40" id="processArea"><div class="panel-body text-center"><p class="text-xs font-bold tracking-widest text-brand-600" id="stepCounter">STEP 1</p><h2 class="mt-2 text-xl font-bold text-slate-950" id="instructionText"></h2><div class="mt-5 flex flex-wrap justify-center gap-2" id="actionArea"></div></div></section>
+	<section class="panel mt-6 hidden" id="logArea"><div class="panel-header"><i class="bi bi-list-check mr-2" aria-hidden="true"></i>進行状況</div><ul class="list" id="logList"></ul></section>
+	<section class="panel mt-6 hidden border-emerald-300" id="resultArea"><div class="panel-header text-emerald-700"><i class="bi bi-trophy mr-2" aria-hidden="true"></i>対戦マップ確定</div><div class="panel-body"><div class="table-wrap"><table class="data-table text-center"><thead><tr><th>MAP</th><th>マップ名</th><th id="attackHeader"></th><th id="defenseHeader"></th></tr></thead><tbody id="resultTableBody"></tbody></table></div></div></section>
 </div>
 
-<div class="row justify-content-center mb-4 d-none" id="processArea">
-	<div class="col-lg-8">
-		<div class="card shadow-sm border-primary">
-			<div class="card-body text-center">
-				<div class="text-muted mb-1" id="stepCounter">STEP 1</div>
-				<h4 class="mb-3" id="instructionText"></h4>
-				<div class="d-flex flex-wrap justify-content-center gap-2" id="actionArea"></div>
-			</div>
-		</div>
-	</div>
-</div>
-
-<div class="row justify-content-center mb-4 d-none" id="logArea">
-	<div class="col-lg-8">
-		<div class="card shadow-sm">
-			<div class="card-body">
-				<h5 class="card-title mb-3"><i class="bi bi-list-check"></i> 進行状況</h5>
-				<ul class="list-group list-group-flush" id="logList"></ul>
-			</div>
-		</div>
-	</div>
-</div>
-
-<div class="row justify-content-center mb-5 d-none" id="resultArea">
-	<div class="col-lg-8">
-		<div class="card shadow-sm border-success">
-			<div class="card-body">
-				<h5 class="card-title mb-3 text-success"><i class="bi bi-trophy"></i> 対戦マップ確定</h5>
-				<div class="table-responsive">
-					<table class="table table-bordered align-middle text-center mb-0">
-						<thead class="table-light">
-							<tr>
-								<th>MAP</th>
-								<th>マップ名</th>
-								<th id="attackHeader"></th>
-								<th id="defenseHeader"></th>
-							</tr>
-						</thead>
-						<tbody id="resultTableBody"></tbody>
-					</table>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-
-<script src="/valorant/static/js/ban-pick.js"></script>
+<script src="{{ '/valorant/static/js/ban-pick.js' | relative_url }}"></script>

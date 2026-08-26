@@ -16,18 +16,18 @@ const resetBtn = document.getElementById("resetBtn");
 // チェックボックス一覧を生成
 MAPS.forEach((map) => {
 	const col = document.createElement("div");
-	col.className = "col";
+		col.className = "min-w-0";
 
 	const wrapper = document.createElement("div");
-	wrapper.className = "form-check";
+		wrapper.className = "map-option";
 	wrapper.id = `wrap-${map}`;
 	wrapper.style.backgroundImage = mapImageUrl(map);
 
 	const tint = document.createElement("div");
-	tint.className = "form-check-tint";
+		tint.className = "map-option-tint";
 	
 	const input = document.createElement("input");
-	input.className = "form-check-input";
+		input.className = "map-option-input size-4 rounded border-white/70 text-valorant focus:ring-red-300";
 	input.type = "checkbox";
 	input.id = `ban-${map}`;
 	input.value = map;
@@ -36,7 +36,7 @@ MAPS.forEach((map) => {
 	});
 
 	const label = document.createElement("label");
-	label.className = "form-check-label text-capitalize";
+		label.className = "map-option-label capitalize";
 	label.setAttribute("for", `ban-${map}`);
 	label.textContent = map;
 
@@ -56,7 +56,7 @@ function pickRandomMap() {
 	const candidates = MAPS.filter((map) => !banned.includes(map));
 
 	if (candidates.length === 0) {
-		hintText.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> 全てのマップがBANされています</span>`;
+		hintText.innerHTML = `<span class="font-medium text-red-700"><i class="bi bi-exclamation-triangle"></i> 全てのマップがBANされています</span>`;
 		return;
 	}
 
@@ -95,7 +95,7 @@ function pickRandomMap() {
 
 	slotStrip.addEventListener("transitionend", function onEnd() {
 		slotStrip.removeEventListener("transitionend", onEnd);
-		hintText.innerHTML = `選ばれたマップ: <strong class="text-capitalize">${chosen}</strong>`;
+		hintText.innerHTML = `選ばれたマップ: <strong class="capitalize text-slate-950">${chosen}</strong>`;
 		pickBtn.disabled = false;
 		resetBtn.disabled = false;
 	}, { once: true });

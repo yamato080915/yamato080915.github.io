@@ -60,7 +60,7 @@ function teamLabel(team) {
 
 function addLog(html) {
 	const li = document.createElement("li");
-	li.className = "list-group-item";
+	li.className = "list-item text-sm text-slate-700";
 	li.innerHTML = html;
 	logList.appendChild(li);
 }
@@ -77,11 +77,11 @@ function startProcess() {
 	logList.innerHTML = "";
 	document.getElementById("resultTableBody").innerHTML = "";
 
-	startBtn.classList.add("d-none");
-	restartBtn.classList.remove("d-none");
-	processArea.classList.remove("d-none");
-	logArea.classList.remove("d-none");
-	resultArea.classList.add("d-none");
+	startBtn.classList.add("hidden");
+	restartBtn.classList.remove("hidden");
+	processArea.classList.remove("hidden");
+	logArea.classList.remove("hidden");
+	resultArea.classList.add("hidden");
 
 	document.getElementById("formatSelect").disabled = true;
 	document.getElementById("teamAName").disabled = true;
@@ -101,31 +101,31 @@ function runStep() {
 	actionArea.innerHTML = "";
 
 	if (step.action === "ban") {
-		instructionText.innerHTML = `<span class="fw-bold">${teamLabel(step.team)}</span> は1マップをBANしてください`;
+		instructionText.innerHTML = `<span class="font-bold">${teamLabel(step.team)}</span> は1マップをBANしてください`;
 		state.remaining.forEach((map) => {
 			const btn = document.createElement("button");
-			btn.className = "btn map-btn map-btn-ban";
+			btn.className = "map-btn map-btn-ban";
 			btn.style.backgroundImage = mapBgStyle(map, "rgba(120,0,0,0.55)");
 			btn.textContent = map;
 			btn.addEventListener("click", () => {
 				state.remaining = state.remaining.filter((m) => m !== map);
-				addLog(`<span class="badge bg-danger me-2">BAN</span>${teamLabel(step.team)} が <strong>${map}</strong> をBAN`);
+				addLog(`<span class="badge badge-danger mr-2">BAN</span>${teamLabel(step.team)} が <strong>${map}</strong> をBAN`);
 				state.stepIndex++;
 				runStep();
 			});
 			actionArea.appendChild(btn);
 		});
 	} else if (step.action === "pick") {
-		instructionText.innerHTML = `<span class="fw-bold">${teamLabel(step.team)}</span> はMap${step.slot}をPICKしてください`;
+		instructionText.innerHTML = `<span class="font-bold">${teamLabel(step.team)}</span> はMap${step.slot}をPICKしてください`;
 		state.remaining.forEach((map) => {
 			const btn = document.createElement("button");
-			btn.className = "btn map-btn map-btn-pick";
+			btn.className = "map-btn map-btn-pick";
 			btn.style.backgroundImage = mapBgStyle(map, "rgba(0,40,120,0.55)");
 			btn.textContent = map;
 			btn.addEventListener("click", () => {
 				state.remaining = state.remaining.filter((m) => m !== map);
 				state.results[step.slot] = { map: map, pickedBy: step.team };
-				addLog(`<span class="badge bg-primary me-2">PICK</span>${teamLabel(step.team)} が Map${step.slot} に <strong>${map}</strong> をPICK`);
+				addLog(`<span class="badge badge-primary mr-2">PICK</span>${teamLabel(step.team)} が Map${step.slot} に <strong>${map}</strong> をPICK`);
 				state.stepIndex++;
 				runStep();
 			});
@@ -135,20 +135,20 @@ function runStep() {
 		const map = state.remaining[0];
 		state.remaining = [];
 		state.results[step.slot] = { map: map, pickedBy: null };
-		addLog(`<span class="badge bg-secondary me-2">残り</span>Map${step.slot} は残りマップの <strong>${map}</strong> に決定`);
+		addLog(`<span class="badge badge-neutral mr-2">残り</span>Map${step.slot} は残りマップの <strong>${map}</strong> に決定`);
 		state.stepIndex++;
 		runStep();
 	} else if (step.action === "side") {
 		const mapInfo = state.results[step.slot];
-		instructionText.innerHTML = `<span class="fw-bold">${teamLabel(step.team)}</span> は Map${step.slot}（<strong>${mapInfo.map}</strong>）のサイドを選択してください`;
+		instructionText.innerHTML = `<span class="font-bold">${teamLabel(step.team)}</span> は Map${step.slot}（<strong>${mapInfo.map}</strong>）のサイドを選択してください`;
 
 		const attackBtn = document.createElement("button");
-		attackBtn.className = "btn btn-outline-warning map-btn";
+		attackBtn.className = "button-warning map-btn";
 		attackBtn.innerHTML = `<i class="bi bi-crosshair"></i> アタッカー`;
 		attackBtn.addEventListener("click", () => chooseSide(step, "attack"));
 
 		const defenseBtn = document.createElement("button");
-		defenseBtn.className = "btn btn-outline-info map-btn";
+		defenseBtn.className = "button-info map-btn";
 		defenseBtn.innerHTML = `<i class="bi bi-shield"></i> ディフェンダー`;
 		defenseBtn.addEventListener("click", () => chooseSide(step, "defense"));
 
@@ -162,14 +162,14 @@ function chooseSide(step, side) {
 	mapInfo.sideTeam = step.team;
 	mapInfo.side = side;
 	const sideLabel = side === "attack" ? "アタッカー" : "ディフェンダー";
-	addLog(`<span class="badge bg-info text-dark me-2">SIDE</span>${teamLabel(step.team)} は Map${step.slot}（${mapInfo.map}）で <strong>${sideLabel}</strong> を選択`);
+	addLog(`<span class="badge bg-cyan-100 text-cyan-800 mr-2">SIDE</span>${teamLabel(step.team)} は Map${step.slot}（${mapInfo.map}）で <strong>${sideLabel}</strong> を選択`);
 	state.stepIndex++;
 	runStep();
 }
 
 function finishProcess() {
-	processArea.classList.add("d-none");
-	resultArea.classList.remove("d-none");
+	processArea.classList.add("hidden");
+	resultArea.classList.remove("hidden");
 
 	document.getElementById("attackHeader").textContent = "アタッカー側";
 	document.getElementById("defenseHeader").textContent = "ディフェンダー側";
@@ -198,7 +198,7 @@ function finishProcess() {
 		mapCell.style.backgroundImage = mapBgStyle(info.map, "rgba(0,0,0,0.5)");
 		mapCell.textContent = info.map;
 
-		tr.innerHTML = `<td class="fw-bold">Map ${slot}</td>`;
+		tr.innerHTML = `<td class="font-bold">Map ${slot}</td>`;
 		tr.appendChild(mapCell);
 		tr.insertAdjacentHTML("beforeend", `
 			<td>${teamLabel(attackTeam)}</td>
@@ -209,11 +209,11 @@ function finishProcess() {
 }
 
 function resetAll() {
-	startBtn.classList.remove("d-none");
-	restartBtn.classList.add("d-none");
-	processArea.classList.add("d-none");
-	logArea.classList.add("d-none");
-	resultArea.classList.add("d-none");
+	startBtn.classList.remove("hidden");
+	restartBtn.classList.add("hidden");
+	processArea.classList.add("hidden");
+	logArea.classList.add("hidden");
+	resultArea.classList.add("hidden");
 	document.getElementById("formatSelect").disabled = false;
 	document.getElementById("teamAName").disabled = false;
 	document.getElementById("teamBName").disabled = false;
