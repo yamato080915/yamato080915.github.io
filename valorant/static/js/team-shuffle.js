@@ -144,12 +144,14 @@ function renderTeams(teams) {
 			</div>
 			<ul class="list">
 				${t.members.map((m, mi) => `
-				<li class="list-item flex flex-wrap items-center justify-between gap-3">
-					${escapeHtml(m.name)}
-					<div class="flex flex-wrap items-center gap-2">
-						<span class="badge ${m.vc ? 'badge-success' : 'badge-danger'}">${m.vc ? 'VCあり' : 'VCなし'}</span>
-						<span class="badge badge-neutral">${m.tier} ${m.div} (${m.point}pts)</span>
-						<button type="button" class="button button-danger button-sm leave-btn" data-team="${i}" data-member="${mi}">退出</button>
+				<li class="list-item">
+					<div class="flex w-full items-center justify-between gap-3">
+						<span class="min-w-0 flex-1 truncate">${escapeHtml(m.name)}</span>
+						<span class="flex shrink-0 items-center justify-end gap-2">
+							<span class="badge ${m.vc ? 'badge-success' : 'badge-danger'}">${m.vc ? 'VCあり' : 'VCなし'}</span>
+							<span class="badge badge-neutral">${m.tier} ${m.div} (${m.point}pts)</span>
+							<button type="button" class="button button-danger button-sm leave-btn" data-team="${i}" data-member="${mi}">退出</button>
+						</span>
 					</div>
 				</li>`).join('')}
 				${t.members.length === 0 ? '<li class="list-item text-center text-slate-500">メンバーがいません</li>' : ''}
