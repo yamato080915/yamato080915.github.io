@@ -2,9 +2,13 @@ let pointsData = {};
 let players = [];
 let standbyPlayers = [];
 let lastTeams = null; // 直近のチーム分け結果。null なら「未実施」
+let nextPlayerId = 1;
 
 fetch('points.json')
-	.then(res => res.json())
+	.then(res => {
+		if (!res.ok) throw new Error(`HTTP ${res.status}`);
+		return res.json();
+	})
 	.then(data => {
 		pointsData = data;
 	})
@@ -18,16 +22,29 @@ function getPoint(p) {
 	return pointsData[p.tier][p.div - 1] || 0;
 }
 
+function createPlayer(name, tier, div, vc) {
+	return { id: `player-${nextPlayerId++}`, name, tier, div, vc };
+}
+
+function escapeHtml(value) {
+	return String(value)
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+		.replaceAll('"', '&quot;')
+		.replaceAll("'", '&#039;');
+}
+
 /* ---------------- プレイヤーリスト ---------------- */
 
 document.getElementById('add-player-form').addEventListener('submit', function(e) {
 	e.preventDefault();
-	const name = document.getElementById('p-name').value;
+	const name = document.getElementById('p-name').value.trim();
 	const tier = document.getElementById('p-tier').value;
 	const div = parseInt(document.getElementById('p-div').value);
 	const vc = document.getElementById('p-vc').checked;
 
-	players.push({ name, tier, div, vc });
+	players.push(createPlayer(name, tier, div, vc));
 	updatePlayerList();
 
 	document.getElementById('p-name').value = '';
@@ -41,7 +58,7 @@ function updatePlayerList() {
 		const li = document.createElement('li');
 		li.className = 'list-item flex items-center justify-between gap-3';
 		li.innerHTML = `
-			<span><strong>${p.name}</strong> <span class="badge badge-neutral ml-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'badge-success' : 'badge-danger'} ml-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
+			<span><strong>${escapeHtml(p.name)}</strong> <span class="badge badge-neutral ml-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'badge-success' : 'badge-danger'} ml-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
 		`;
 
 		const delBtn = document.createElement('button');
@@ -51,12 +68,7 @@ function updatePlayerList() {
 			if (lastTeams) {
 				// 退出済みとして扱うため、チーム結果からも削除する 
 				for (let i = 0; i < lastTeams.length; i++) {
-					const memberIndex = lastTeams[i].members.findIndex(member =>
-						member.name === p.name &&
-						member.tier === p.tier &&
-						member.div === p.div &&
-						member.vc === p.vc
-					);
+					const memberIndex = lastTeams[i].members.findIndex(member => member.id === p.id);
 
 					if (memberIndex !== -1) {
 						leaveMember(i, memberIndex);
@@ -78,12 +90,12 @@ function updatePlayerList() {
 
 document.getElementById('add-standby-form').addEventListener('submit', function(e) {
 	e.preventDefault();
-	const name = document.getElementById('s-name').value;
+	const name = document.getElementById('s-name').value.trim();
 	const tier = document.getElementById('s-tier').value;
 	const div = parseInt(document.getElementById('s-div').value);
 	const vc = document.getElementById('s-vc').checked;
 
-	standbyPlayers.push({ name, tier, div, vc });
+	standbyPlayers.push(createPlayer(name, tier, div, vc));
 	updateStandbyList();
 
 	document.getElementById('s-name').value = '';
@@ -97,7 +109,7 @@ function updateStandbyList() {
 		const li = document.createElement('li');
 		li.className = 'list-item flex items-center justify-between gap-3';
 		li.innerHTML = `
-			<span><strong>${p.name}</strong> <span class="badge badge-neutral ml-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'badge-success' : 'badge-danger'} ml-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
+			<span><strong>${escapeHtml(p.name)}</strong> <span class="badge badge-neutral ml-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'badge-success' : 'badge-danger'} ml-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
 		`;
 
 		const delBtn = document.createElement('button');
@@ -133,7 +145,7 @@ function renderTeams(teams) {
 			<ul class="list">
 				${t.members.map((m, mi) => `
 				<li class="list-item flex flex-wrap items-center justify-between gap-3">
-					${m.name}
+					${escapeHtml(m.name)}
 					<div class="flex flex-wrap items-center gap-2">
 						<span class="badge ${m.vc ? 'badge-success' : 'badge-danger'}">${m.vc ? 'VCあり' : 'VCなし'}</span>
 						<span class="badge badge-neutral">${m.tier} ${m.div} (${m.point}pts)</span>
@@ -167,9 +179,7 @@ function leaveMember(teamIndex, memberIndex) {
 	team.vacancies = (team.vacancies || 0) + 1;
 
 	// プレイヤーリストからも削除(退出済みとして扱う)
-	const pIdx = players.findIndex(p =>
-		p.name === member.name && p.tier === member.tier && p.div === member.div && p.vc === member.vc
-	);
+	const pIdx = players.findIndex(p => p.id === member.id);
 	if (pIdx !== -1) players.splice(pIdx, 1);
 
 	updatePlayerList();
@@ -180,62 +190,14 @@ function leaveMember(teamIndex, memberIndex) {
 
 function doInitialShuffle() {
 	const teamCount = parseInt(document.getElementById('team-count').value);
-
 	const playersWithPoints = players.map(p => ({ ...p, point: getPoint(p) }));
-
-	let bestTeams = null;
-	let bestScore = { diff: Infinity, vcDiff: Infinity };
-
-	for (let sim = 0; sim < 5000; sim++) {
-		let shuffled = [...playersWithPoints].sort(() => Math.random() - 0.5);
-		shuffled.sort((a, b) => b.point - a.point);
-
-		let teams = Array.from({ length: teamCount }, () => ({ members: [], totalPoints: 0, vacancies: 0 }));
-
-		for (const p of shuffled) {
-			let targetTeam = null;
-			let minPts = Infinity;
-
-			for (const t of teams) {
-				if (t.members.length < 5 && t.totalPoints < minPts) {
-					minPts = t.totalPoints;
-					targetTeam = t;
-				}
-			}
-
-			if (!targetTeam) {
-				for (const t of teams) {
-					if (t.totalPoints < minPts) {
-						minPts = t.totalPoints;
-						targetTeam = t;
-					}
-				}
-			}
-
-			targetTeam.members.push(p);
-			targetTeam.totalPoints += p.point;
-		}
-
-		let ptsArr = teams.map(t => t.totalPoints);
-		let maxP = Math.max(...ptsArr);
-		let minP = Math.min(...ptsArr);
-		let diff = maxP - minP;
-
-		let vcArr = teams.map(t => t.members.filter(m => !m.vc).length);
-		let maxVc = Math.max(...vcArr);
-		let minVc = Math.min(...vcArr);
-		let vcDiff = maxVc - minVc;
-
-		if (diff < bestScore.diff || (diff === bestScore.diff && vcDiff < bestScore.vcDiff)) {
-			bestScore = { diff, vcDiff };
-			bestTeams = JSON.parse(JSON.stringify(teams));
-		}
-
-		if (bestScore.diff === 0 && bestScore.vcDiff <= 1) break;
+	try {
+		const result = TeamBalancer.balanceInitial(playersWithPoints, teamCount);
+		lastTeams = result.teams;
+		renderTeams(lastTeams);
+	} catch (error) {
+		alert(error.message);
 	}
-
-	lastTeams = bestTeams;
-	renderTeams(lastTeams);
 }
 
 /* ---------------- 退出・途中参加を反映した調整 ---------------- */
@@ -253,85 +215,20 @@ function doAdjustment() {
 		return;
 	}
 
-	// 途中参加プレイヤーにポイントを付与
 	const standbyWithPoints = standbyPlayers.map(p => ({ ...p, point: getPoint(p) }));
-
-	const baseTotals = lastTeams.map(t => t.totalPoints);
-	const baseVcNone = lastTeams.map(t => t.members.filter(m => !m.vc).length);
-	const baseSlots = lastTeams.map(t => t.vacancies || 0);
-
-	let bestAssignment = null; // [{ teamIndex, player }, ...] totalVacancies件
-	let bestScore = { diff: Infinity, vcDiff: Infinity };
-
-	for (let sim = 0; sim < 5000; sim++) {
-		// 途中参加プレイヤーの中から必要人数分をランダムに選出
-		let pool = [...standbyWithPoints].sort(() => Math.random() - 0.5);
-		let selected = pool.slice(0, totalVacancies);
-		selected.sort((a, b) => b.point - a.point);
-
-		let remainingSlots = [...baseSlots];
-		let runningTotals = [...baseTotals];
-		let runningVcNone = [...baseVcNone];
-		let assignment = [];
-
-		for (const p of selected) {
-			// 空き枠が残っていて、かつ現在の合計ポイントが最も低いチームに割り当てる
-			let targetIndex = -1;
-			let minPts = Infinity;
-			for (let i = 0; i < lastTeams.length; i++) {
-				if (remainingSlots[i] > 0 && runningTotals[i] < minPts) {
-					minPts = runningTotals[i];
-					targetIndex = i;
-				}
-			}
-			if (targetIndex === -1) break;
-
-			remainingSlots[targetIndex]--;
-			runningTotals[targetIndex] += p.point;
-			if (!p.vc) runningVcNone[targetIndex]++;
-			assignment.push({ teamIndex: targetIndex, player: p });
-		}
-
-		const maxP = Math.max(...runningTotals);
-		const minP = Math.min(...runningTotals);
-		const diff = maxP - minP;
-
-		const maxVc = Math.max(...runningVcNone);
-		const minVc = Math.min(...runningVcNone);
-		const vcDiff = maxVc - minVc;
-
-		if (diff < bestScore.diff || (diff === bestScore.diff && vcDiff < bestScore.vcDiff)) {
-			bestScore = { diff, vcDiff };
-			bestAssignment = assignment;
-		}
-
-		if (bestScore.diff === 0 && bestScore.vcDiff <= 1) break;
+	try {
+		const result = TeamBalancer.fillVacancies(lastTeams, standbyWithPoints);
+		const selectedIds = new Set(result.selectedPlayerIds);
+		const selectedPlayers = standbyPlayers.filter(player => selectedIds.has(player.id));
+		players.push(...selectedPlayers);
+		standbyPlayers = standbyPlayers.filter(player => !selectedIds.has(player.id));
+		lastTeams = result.teams;
+		updatePlayerList();
+		updateStandbyList();
+		renderTeams(lastTeams);
+	} catch (error) {
+		alert(error.message);
 	}
-
-	if (!bestAssignment || bestAssignment.length < totalVacancies) {
-		alert('調整に失敗しました。もう一度お試しください。');
-		return;
-	}
-
-	// 採用されたプレイヤーをチームへ反映
-	bestAssignment.forEach(({ teamIndex, player }) => {
-		lastTeams[teamIndex].members.push(player);
-		lastTeams[teamIndex].totalPoints += player.point;
-		lastTeams[teamIndex].vacancies -= 1;
-
-		// プレイヤーリストへ追加
-		players.push({ name: player.name, tier: player.tier, div: player.div, vc: player.vc });
-
-		// 途中参加リストから除去(不採用の人はそのまま残る)
-		const sIdx = standbyPlayers.findIndex(sp =>
-			sp.name === player.name && sp.tier === player.tier && sp.div === player.div && sp.vc === player.vc
-		);
-		if (sIdx !== -1) standbyPlayers.splice(sIdx, 1);
-	});
-
-	updatePlayerList();
-	updateStandbyList();
-	renderTeams(lastTeams);
 }
 
 /* ---------------- チーム分け実行ボタン ---------------- */
