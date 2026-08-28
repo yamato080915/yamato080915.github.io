@@ -33,7 +33,7 @@ title: チーム分け
 	</aside>
 
 	<div class="grid gap-6 lg:col-span-8">
-		<section class="panel"><div class="panel-header">プレイヤーリスト (<span id="player-count">0</span>人)</div>
+		<section class="panel"><div class="panel-header flex items-center justify-between gap-3"><span>プレイヤーリスト (<span id="player-count">0</span>人)</span><button type="button" id="initialize-players-btn" class="button button-danger button-sm shrink-0" disabled><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>初期化</button></div>
 			<ul id="player-list" class="list max-h-80 overflow-y-auto"></ul>
 			<div class="border-t border-slate-200 p-5"><div class="flex flex-wrap items-end gap-3">
 				<div><label class="field-label" for="team-count">チーム数</label><input type="number" id="team-count" class="field-control w-28" value="2" min="1"></div>
