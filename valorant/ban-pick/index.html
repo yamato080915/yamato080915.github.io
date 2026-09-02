@@ -16,4 +16,4 @@ title: バンピック
 	<section class="panel mt-6 hidden border-emerald-300" id="resultArea"><div class="panel-header text-emerald-700"><i class="bi bi-trophy mr-2" aria-hidden="true"></i>対戦マップ確定</div><div class="panel-body"><div class="table-wrap"><table class="data-table text-center"><thead><tr><th>MAP</th><th>マップ名</th><th id="attackHeader"></th><th id="defenseHeader"></th></tr></thead><tbody id="resultTableBody"></tbody></table></div></div></section>
 </div>
 
-<script src="{{ '/valorant/static/js/ban-pick.js' | relative_url }}"></script>
+<script src="{{ '/valorant/static/js/ban-pick.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>

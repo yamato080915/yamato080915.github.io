@@ -9,9 +9,9 @@
 	<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 	<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js" defer></script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-	<link rel="stylesheet" href="{{ '/static/css/site.css' | relative_url }}">
+	<link rel="stylesheet" href="{{ '/static/css/site.css' | relative_url }}?v={{ site.time | date: '%s' }}">
 	{% for stylesheet in page.css %}
-		<link rel="stylesheet" href="{{ stylesheet | relative_url }}">
+		<link rel="stylesheet" href="{{ stylesheet | relative_url }}?v={{ site.time | date: '%s' }}">
 	{% endfor %}
 	<title>{{ page.title }}</title>
 </head>
@@ -69,6 +69,6 @@
 			</nav>
 		</div>
 	</footer>
-	<script src="{{ '/static/site.js' | relative_url }}"></script>
+	<script src="{{ '/static/site.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
 </body>
 </html>
