@@ -30,6 +30,51 @@
 
 @layer components {
 	.site-shell { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+	.glass-nav {
+		position: relative;
+		isolation: isolate;
+		overflow: hidden;
+		border: 1px solid rgb(255 255 255 / 0.28);
+		border-radius: 1.5rem;
+		background: rgb(255 255 255 / 0.08);
+		box-shadow: 0 18px 50px rgb(15 23 42 / 0.14), 0 4px 14px rgb(15 23 42 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.4), inset 0 -1px 0 rgb(148 163 184 / 0.06);
+		-webkit-backdrop-filter: blur(24px) saturate(170%);
+		backdrop-filter: blur(24px) saturate(170%);
+	}
+	.glass-nav::before {
+		position: absolute;
+		inset: 0;
+		z-index: 0;
+		background: linear-gradient(120deg, rgb(255 255 255 / 0.1) 0%, rgb(255 255 255 / 0.02) 42%, rgb(219 234 254 / 0.04) 100%);
+		content: "";
+		pointer-events: none;
+	}
+	.glass-nav::after {
+		position: absolute;
+		top: 0;
+		right: 8%;
+		left: 8%;
+		z-index: 1;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.95), transparent);
+		content: "";
+		pointer-events: none;
+	}
+	.glass-home-link { @apply inline-flex min-h-10 items-center rounded-xl px-3 py-2 font-bold tracking-tight text-slate-950 transition duration-200 hover:bg-white/18 hover:text-brand-700 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] active:translate-y-px active:bg-white/30; }
+	.glass-nav-link { @apply inline-flex min-h-10 items-center rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition duration-200 hover:bg-white/18 hover:text-slate-950 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] active:translate-y-px active:bg-white/30; }
+	.glass-icon-button { @apply grid size-11 shrink-0 place-items-center rounded-2xl border border-white/26 bg-white/6 text-xl text-slate-700 shadow-sm transition duration-200 hover:border-white/42 hover:bg-white/18 hover:text-slate-950 hover:shadow-md active:translate-y-px active:bg-white/30; }
+	.site-footer {
+		border-top: 1px solid rgb(148 163 184 / 0.24);
+		background: #f8fafc;
+		color: #64748b;
+	}
+	.site-footer-inner { @apply flex flex-col items-center justify-center gap-4 py-7 text-center; }
+	.footer-copyright { @apply text-sm font-medium tracking-[0.02em]; }
+	.footer-account-links { @apply flex items-center justify-center gap-2; }
+	.footer-account-link { @apply grid min-h-11 min-w-11 place-items-center overflow-hidden rounded-2xl border border-slate-200/80 bg-white/70 px-2 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-500/30 hover:bg-brand-50/70 hover:shadow-md focus-visible:outline-brand-600 active:translate-y-0; }
+	.footer-account-link-omc { @apply w-16; }
+	.footer-omc-frame { @apply flex h-8 w-12 items-center justify-center overflow-hidden rounded-md bg-white; }
+	.footer-omc-logo { width: 4.5rem; max-width: none; transform: scale(1.2); }
 	.eyebrow { @apply text-xs font-bold uppercase tracking-[0.18em] text-brand-600; }
 	.page-title { @apply text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl; }
 	.section-title { @apply text-2xl font-bold tracking-tight text-slate-950; }
@@ -67,6 +112,10 @@
 	.list-item { @apply px-4 py-3; }
 	.close-button { @apply grid size-9 place-items-center rounded-lg text-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900; }
 	.sr-only { @apply absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0 [clip:rect(0,0,0,0)]; }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+	.glass-nav { background: rgb(255 255 255 / 0.96); }
 }
 
 .compressed-text { display: inline-block; overflow: hidden; white-space: nowrap; }

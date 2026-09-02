@@ -76,8 +76,10 @@ title: Home
 		document.getElementById("omc-a").setAttribute("href", "https://onlinemathcontest.com/contests/" + String(latest["ContestScreenName"]).split(".")[0]);
 	});
 </script>
-<script src="https://yamato0915.xsrv.jp/statics/js/chart.js"></script>
+<script src="https://yamato0915.xsrv.jp/statics/js/chart.js" defer></script>
 <script>
-	createRatingChart("https://yamato0915.xsrv.jp/api/atcoder/rating", "ratingChart", "rating", "place", "diff", "endtime", "contestname", "atcoder-a", "atcoder-div");
-	createRatingChart("https://yamato0915.xsrv.jp/api/omc/rating", "omcRating", "omcrating", "omcplace", "omcdiff", "omcendtime", "omccontestname", "omc-a", "omc-div");
+	window.addEventListener("DOMContentLoaded", () => {
+		createRatingChart("https://yamato0915.xsrv.jp/api/atcoder/rating", "ratingChart", "rating", "place", "diff", "endtime", "contestname", "atcoder-a", "atcoder-div");
+		createRatingChart("https://yamato0915.xsrv.jp/api/omc/rating", "omcRating", "omcrating", "omcplace", "omcdiff", "omcendtime", "omccontestname", "omc-a", "omc-div");
+	});
 </script>
