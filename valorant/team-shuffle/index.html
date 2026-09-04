@@ -1,48 +1,67 @@
 ---
 layout: default
 title: チーム分け
+css:
+  - /valorant/static/css/team-shuffle.css
 ---
 
 <h1 class="page-title mb-8 text-center">チーム分け</h1>
 
-<div class="grid items-start gap-6 lg:grid-cols-12">
-	<aside class="grid gap-6 lg:col-span-4">
-		<section class="panel"><div class="panel-header">プレイヤー追加</div><div class="panel-body">
-			<form id="add-player-form" class="grid gap-4">
-				<div><label class="field-label" for="p-name">名前</label><input type="text" id="p-name" class="field-control" required></div>
-				<div><label class="field-label" for="p-tier">ランク</label><select id="p-tier" class="field-control">
-					<option value="iron">Iron</option><option value="bronze">Bronze</option><option value="silver">Silver</option><option value="gold">Gold</option><option value="platinum">Platinum</option><option value="diamond">Diamond</option><option value="ascendant">Ascendant</option><option value="immortal">Immortal</option><option value="radiant">Radiant</option>
-				</select></div>
-				<div><label class="field-label" for="p-div">ディビジョン</label><select id="p-div" class="field-control"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
-				<label class="flex items-center gap-3 text-sm font-medium text-slate-700"><input type="checkbox" class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" id="p-vc" checked>ボイスチャットあり</label>
-				<button type="submit" class="button button-primary w-full">追加</button>
-			</form>
-		</div></section>
-		<section class="panel"><div class="panel-header">途中参加プレイヤー (<span id="standby-player-count">0</span>人)</div><div class="panel-body">
-			<form id="add-standby-form" class="grid gap-4">
-				<div><label class="field-label" for="s-name">名前</label><input type="text" id="s-name" class="field-control" required></div>
-				<div><label class="field-label" for="s-tier">ランク</label><select id="s-tier" class="field-control">
-					<option value="iron">Iron</option><option value="bronze">Bronze</option><option value="silver">Silver</option><option value="gold">Gold</option><option value="platinum">Platinum</option><option value="diamond">Diamond</option><option value="ascendant">Ascendant</option><option value="immortal">Immortal</option><option value="radiant">Radiant</option>
-				</select></div>
-				<div><label class="field-label" for="s-div">ディビジョン</label><select id="s-div" class="field-control"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
-				<label class="flex items-center gap-3 text-sm font-medium text-slate-700"><input type="checkbox" class="size-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" id="s-vc" checked>ボイスチャットあり</label>
-				<button type="submit" class="button button-secondary w-full">途中参加として追加</button>
-			</form>
-		</div><ul id="standby-player-list" class="list max-h-64 overflow-y-auto"></ul></section>
-		<a href="{{ '/valorant/' | relative_url }}" class="text-sm font-semibold text-brand-700 hover:underline">ほかのサービスを見る</a>
-	</aside>
+<div id="team-shuffle-app" class="shuffle-stack" data-register-url="{{ '/valorant/team-shuffle/register' | relative_url }}" data-points-url="{{ '/valorant/team-shuffle/points.json' | relative_url }}">
+	<section class="panel">
+		<div class="panel-header shuffle-heading"><span>参加者を募集</span><span id="room-state" class="badge badge-neutral">準備中</span></div>
+		<div class="panel-body">
+			<div class="shuffle-meta">
+				<p>募集ID: <span id="room-id" class="shuffle-id">発行中…</span></p>
+				<p>有効期限: <span id="room-expiry">—</span></p>
+			</div>
+			<label class="field-label" for="registration-url">参加URL</label>
+			<div class="shuffle-url shuffle-block">
+				<input id="registration-url" class="field-control" type="url" readonly aria-label="参加URL" placeholder="募集を作成すると表示されます">
+				<button id="copy-url-btn" type="button" class="button button-primary" disabled>URLをコピー</button>
+			</div>
+			<div class="shuffle-actions">
+				<button id="close-room-btn" type="button" class="button button-secondary" disabled>募集を終了</button>
+				<button id="new-room-btn" type="button" class="button button-danger" disabled>新しい募集</button>
+				<button id="retry-sync-btn" type="button" class="button button-secondary">再取得</button>
+			</div>
+			<p id="sync-status" class="field-help shuffle-status" role="status" aria-live="polite">募集を準備しています。</p>
+			<p class="field-help shuffle-help">参加URLを共有すると、参加者が自分で情報を登録できます。受付中は5秒ごとに取得します。募集は12時間有効で、途中終了もできます。</p>
+		</div>
+	</section>
 
-	<div class="grid gap-6 lg:col-span-8">
-		<section class="panel"><div class="panel-header flex items-center justify-between gap-3"><span>プレイヤーリスト (<span id="player-count">0</span>人)</span><button type="button" id="initialize-players-btn" class="button button-danger button-sm shrink-0" disabled><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>初期化</button></div>
-			<ul id="player-list" class="list max-h-80 overflow-y-auto"></ul>
-			<div class="border-t border-slate-200 p-5"><div class="flex flex-wrap items-end gap-3">
-				<div><label class="field-label" for="team-count">チーム数</label><input type="number" id="team-count" class="field-control w-28" value="2" min="1"></div>
-				<button id="shuffle-btn" class="button button-success">チーム分け・補充実行</button>
-			</div><p class="field-help mt-3">すでにチーム分けを行っている場合は、退出・途中参加を反映した調整を行います。<br>退出したプレイヤーより途中参加プレイヤーの人数が多い場合、一番ポイントバランスが良い状態になるような選び方となります。</p></div>
+	<div class="shuffle-columns">
+		<section class="panel">
+			<div class="panel-header">参加者（<span id="player-count">0</span>人）</div>
+			<ul id="player-list" class="list shuffle-list"></ul>
 		</section>
-		<section><div class="mb-4 flex items-center justify-between gap-3"><h2 class="section-title">結果</h2></div><div id="result" class="grid gap-4 md:grid-cols-2"></div></section>
+		<section class="panel">
+			<div class="panel-header">途中参加・補充待ち（<span id="standby-player-count">0</span>人）</div>
+			<ul id="standby-player-list" class="list shuffle-list"></ul>
+			<div class="panel-body"><p class="field-help">チーム分け後の登録者はこちらに追加されます。補充でチームに入るまでは情報を修正できます。</p></div>
+		</section>
 	</div>
+
+	<section class="panel">
+		<div class="panel-header">チーム分け</div>
+		<div class="panel-body">
+			<div class="shuffle-actions">
+				<div><label class="field-label" for="team-count">チーム数</label><input id="team-count" type="number" class="field-control shuffle-count" value="2" min="2" max="100" required></div>
+				<button id="shuffle-btn" type="button" class="button button-success" disabled>チーム分け・補充実行</button>
+				<button id="reset-teams-btn" type="button" class="button button-secondary" disabled>チーム分けをリセット</button>
+			</div>
+			<p class="field-help shuffle-help">チームが確定した参加者の情報は修正できなくなります。チーム分け後は退出者の空き枠を途中参加者で補充します。リセットすると全員が通常参加に戻り、受付中なら再び情報を修正できます。</p>
+		</div>
+	</section>
+
+	<section>
+		<h2 class="section-title shuffle-block">結果</h2>
+		<div id="result" class="shuffle-results"></div>
+	</section>
+	<a href="{{ '/valorant/' | relative_url }}" class="text-sm font-semibold text-brand-700 hover:underline">ほかのサービスを見る</a>
+	<noscript>チーム分けにはJavaScriptを有効にしてください。</noscript>
 </div>
 
 <script src="{{ '/valorant/static/js/team-balancer.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
+<script src="{{ '/valorant/static/js/team-room.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
 <script src="{{ '/valorant/static/js/team-shuffle.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>

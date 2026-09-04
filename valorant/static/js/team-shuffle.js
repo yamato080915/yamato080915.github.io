@@ -1,449 +1,201 @@
-let pointsData = {};
-let players = [];
-let standbyPlayers = [];
-let lastTeams = null; // 直近のチーム分け結果。null なら「未実施」
-let nextPlayerId = 1;
-
-const TEAM_SHUFFLE_STORAGE_KEY = 'valorant.teamShuffle.state.v1';
-const TEAM_SHUFFLE_STORAGE_SCHEMA_VERSION = 1;
-const TEAM_SHUFFLE_STORAGE_TTL_MS = 12 * 60 * 60 * 1000;
-const DEFAULT_TEAM_COUNT = 2;
-
-fetch('points.json')
-	.then(res => {
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		return res.json();
-	})
-	.then(data => {
-		pointsData = data;
-	})
-	.catch(err => console.error('Error loading points.json:', err));
-
-function getPoint(p) {
-	if (!pointsData || !pointsData[p.tier]) return 0;
-	if (p.tier === 'radiant') {
-		return pointsData[p.tier][0];
+(function() {
+	'use strict';
+	const $ = id => document.getElementById(id);
+	const app = $('team-shuffle-app');
+	let manager, busy = false, syncing = false, timer, halted = false, pointsReady = false, renderKey = '', replacingExpired = false;
+	const labels = { open: '受付中', closed: '募集終了', expired: '期限切れ' };
+	function status(message, error = false) {
+		$('sync-status').textContent = message;
+		$('sync-status').dataset.error = String(error);
 	}
-	return pointsData[p.tier][p.div - 1] || 0;
-}
-
-function createPlayer(name, tier, div, vc) {
-	return { id: `player-${nextPlayerId++}`, name, tier, div, vc };
-}
-
-function escapeHtml(value) {
-	return String(value)
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&#039;');
-}
-
-/* ---------------- 状態の保存・復元 ---------------- */
-
-function removeSavedState() {
-	try {
-		localStorage.removeItem(TEAM_SHUFFLE_STORAGE_KEY);
-	} catch (error) {
-		console.error('チーム分け状態の保存データを削除できませんでした:', error);
+	function element(tag, className, text) {
+		const el = document.createElement(tag);
+		if (className) el.className = className;
+		if (text !== undefined) el.textContent = text;
+		return el;
 	}
-}
-
-function isValidPlayer(player, requirePoint = false) {
-	if (!player || typeof player !== 'object') return false;
-	if (typeof player.id !== 'string' || player.id.length === 0) return false;
-	if (typeof player.name !== 'string' || typeof player.tier !== 'string') return false;
-	if (!Number.isInteger(player.div) || typeof player.vc !== 'boolean') return false;
-	return !requirePoint || Number.isFinite(player.point);
-}
-
-function isValidSavedState(state) {
-	if (!state || typeof state !== 'object') return false;
-	if (state.schemaVersion !== TEAM_SHUFFLE_STORAGE_SCHEMA_VERSION) return false;
-	if (!Number.isFinite(state.updatedAt) || !Number.isFinite(state.expiresAt)) return false;
-	if (state.expiresAt <= state.updatedAt) return false;
-	if (!Array.isArray(state.players) || !state.players.every(player => isValidPlayer(player))) return false;
-	if (!Array.isArray(state.standbyPlayers) || !state.standbyPlayers.every(player => isValidPlayer(player))) return false;
-	if (!Number.isInteger(state.teamCount) || state.teamCount < 1) return false;
-	if (!Number.isInteger(state.nextPlayerId) || state.nextPlayerId < 1) return false;
-
-	const listedIds = [...state.players, ...state.standbyPlayers].map(player => player.id);
-	if (new Set(listedIds).size !== listedIds.length) return false;
-	const highestGeneratedId = listedIds.reduce((highest, id) => {
-		const match = /^player-(\d+)$/.exec(id);
-		return match ? Math.max(highest, Number(match[1])) : highest;
-	}, 0);
-	if (state.nextPlayerId <= highestGeneratedId) return false;
-	if (state.lastTeams === null) return true;
-	if (!Array.isArray(state.lastTeams)) return false;
-
-	const teamMemberIds = [];
-	for (const team of state.lastTeams) {
-		if (!team || typeof team !== 'object' || !Array.isArray(team.members)) return false;
-		if (!team.members.every(member => isValidPlayer(member, true))) return false;
-		if (!Number.isFinite(team.totalPoints)) return false;
-		if (!Number.isInteger(team.vacancies) || team.vacancies < 0) return false;
-		teamMemberIds.push(...team.members.map(member => member.id));
-	}
-
-	const playerIds = new Set(state.players.map(player => player.id));
-	return new Set(teamMemberIds).size === teamMemberIds.length
-		&& teamMemberIds.every(id => playerIds.has(id));
-}
-
-function getTeamCount() {
-	const teamCount = parseInt(document.getElementById('team-count').value, 10);
-	return Number.isInteger(teamCount) && teamCount >= 1 ? teamCount : DEFAULT_TEAM_COUNT;
-}
-
-function hasInitializableState() {
-	const teamCountValue = document.getElementById('team-count').value;
-	return players.length > 0
-		|| standbyPlayers.length > 0
-		|| lastTeams !== null
-		|| nextPlayerId !== 1
-		|| teamCountValue !== String(DEFAULT_TEAM_COUNT);
-}
-
-function updateInitializeButtonState() {
-	const initializeButton = document.getElementById('initialize-players-btn');
-	if (initializeButton) initializeButton.disabled = !hasInitializableState();
-}
-
-function saveState() {
-	const now = Date.now();
-	const state = {
-		schemaVersion: TEAM_SHUFFLE_STORAGE_SCHEMA_VERSION,
-		updatedAt: now,
-		expiresAt: now + TEAM_SHUFFLE_STORAGE_TTL_MS,
-		players,
-		standbyPlayers,
-		lastTeams,
-		teamCount: getTeamCount(),
-		nextPlayerId
-	};
-
-	try {
-		localStorage.setItem(TEAM_SHUFFLE_STORAGE_KEY, JSON.stringify(state));
-	} catch (error) {
-		console.error('チーム分け状態を保存できませんでした:', error);
-	}
-	updateInitializeButtonState();
-}
-
-function loadSavedState() {
-	let rawState;
-	try {
-		rawState = localStorage.getItem(TEAM_SHUFFLE_STORAGE_KEY);
-	} catch (error) {
-		console.error('チーム分け状態を読み込めませんでした:', error);
-		return false;
-	}
-	if (!rawState) return false;
-
-	let state;
-	try {
-		state = JSON.parse(rawState);
-	} catch (error) {
-		console.error('チーム分け状態の保存データが破損しています:', error);
-		removeSavedState();
-		return false;
-	}
-
-	if (!isValidSavedState(state) || state.expiresAt <= Date.now()) {
-		removeSavedState();
-		return false;
-	}
-
-	players = state.players;
-	standbyPlayers = state.standbyPlayers;
-	lastTeams = state.lastTeams;
-	nextPlayerId = state.nextPlayerId;
-	document.getElementById('team-count').value = state.teamCount;
-	return true;
-}
-
-/* ---------------- プレイヤーリスト ---------------- */
-
-document.getElementById('add-player-form').addEventListener('submit', function(e) {
-	e.preventDefault();
-	const name = document.getElementById('p-name').value.trim();
-	const tier = document.getElementById('p-tier').value;
-	const div = parseInt(document.getElementById('p-div').value);
-	const vc = document.getElementById('p-vc').checked;
-
-	players.push(createPlayer(name, tier, div, vc));
-	updatePlayerList();
-	saveState();
-
-	document.getElementById('p-name').value = '';
-	document.getElementById('p-name').focus();
-});
-
-function updatePlayerList() {
-	const list = document.getElementById('player-list');
-	list.innerHTML = '';
-	players.forEach((p, index) => {
-		const li = document.createElement('li');
-		li.className = 'list-item flex items-center justify-between gap-3';
-		li.innerHTML = `
-			<span><strong>${escapeHtml(p.name)}</strong> <span class="badge badge-neutral ml-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'badge-success' : 'badge-danger'} ml-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
-		`;
-
-		const delBtn = document.createElement('button');
-		delBtn.className = 'button button-danger button-sm shrink-0';
-		delBtn.textContent = '削除';
-		delBtn.onclick = () => {
-			if (lastTeams) {
-				// 退出済みとして扱うため、チーム結果からも削除する 
-				for (let i = 0; i < lastTeams.length; i++) {
-					const memberIndex = lastTeams[i].members.findIndex(member => member.id === p.id);
-
-					if (memberIndex !== -1) {
-						leaveMember(i, memberIndex);
-						break;
-					}
-				}
-			} else {
-				players.splice(index, 1);
-				saveState();
-			}
-			updatePlayerList();
-		};
-		li.appendChild(delBtn);
-		list.appendChild(li);
-	});
-	document.getElementById('player-count').textContent = players.length;
-	updateInitializeButtonState();
-}
-
-/* ---------------- 途中参加プレイヤーリスト ---------------- */
-
-document.getElementById('add-standby-form').addEventListener('submit', function(e) {
-	e.preventDefault();
-	const name = document.getElementById('s-name').value.trim();
-	const tier = document.getElementById('s-tier').value;
-	const div = parseInt(document.getElementById('s-div').value);
-	const vc = document.getElementById('s-vc').checked;
-
-	standbyPlayers.push(createPlayer(name, tier, div, vc));
-	updateStandbyList();
-	saveState();
-
-	document.getElementById('s-name').value = '';
-	document.getElementById('s-name').focus();
-});
-
-function updateStandbyList() {
-	const list = document.getElementById('standby-player-list');
-	list.innerHTML = '';
-	standbyPlayers.forEach((p, index) => {
-		const li = document.createElement('li');
-		li.className = 'list-item flex items-center justify-between gap-3';
-		li.innerHTML = `
-			<span><strong>${escapeHtml(p.name)}</strong> <span class="badge badge-neutral ml-2">${p.tier} ${p.div}</span><span class="badge ${p.vc ? 'badge-success' : 'badge-danger'} ml-2">${p.vc ? 'VCあり' : 'VCなし'}</span></span>
-		`;
-
-		const delBtn = document.createElement('button');
-		delBtn.className = 'button button-danger button-sm shrink-0';
-		delBtn.textContent = '削除';
-		delBtn.onclick = () => {
-			standbyPlayers.splice(index, 1);
-			updateStandbyList();
-			saveState();
-		};
-		li.appendChild(delBtn);
-		list.appendChild(li);
-	});
-	document.getElementById('standby-player-count').textContent = standbyPlayers.length;
-	updateInitializeButtonState();
-}
-
-/* ---------------- チーム結果の描画 ---------------- */
-
-function renderTeams(teams) {
-	const resultDiv = document.getElementById('result');
-	resultDiv.innerHTML = '';
-
-	teams.forEach((t, i) => {
-		const col = document.createElement('div');
-		col.className = 'min-w-0';
-		const vcNoneCount = t.members.filter(m => !m.vc).length;
-		const card = document.createElement('div');
-		card.className = 'panel h-full';
-		card.innerHTML = `
-			<div class="flex items-center justify-between gap-3 bg-slate-950 px-5 py-4 font-semibold text-white">
-				<span>チーム ${i + 1} <span class="badge bg-white/15 text-white ml-2">VCなし: ${vcNoneCount}人</span></span>
-				<span class="badge bg-brand-500 text-white">合計 ${t.totalPoints} pts</span>
-			</div>
-			<ul class="list">
-				${t.members.map((m, mi) => `
-				<li class="list-item">
-					<div class="flex w-full items-center justify-between gap-3">
-						<span class="min-w-0 flex-1 truncate">${escapeHtml(m.name)}</span>
-						<span class="flex shrink-0 items-center justify-end gap-2">
-							<span class="badge ${m.vc ? 'badge-success' : 'badge-danger'}">${m.vc ? 'VCあり' : 'VCなし'}</span>
-							<span class="badge badge-neutral">${m.tier} ${m.div} (${m.point}pts)</span>
-							<button type="button" class="button button-danger button-sm leave-btn" data-team="${i}" data-member="${mi}">退出</button>
-						</span>
-					</div>
-				</li>`).join('')}
-				${t.members.length === 0 ? '<li class="list-item text-center text-slate-500">メンバーがいません</li>' : ''}
-			</ul>
-		`;
-		col.appendChild(card);
-		resultDiv.appendChild(col);
-	});
-
-	resultDiv.querySelectorAll('.leave-btn').forEach(btn => {
-		btn.addEventListener('click', function() {
-			const teamIndex = parseInt(this.dataset.team);
-			const memberIndex = parseInt(this.dataset.member);
-			leaveMember(teamIndex, memberIndex);
+	function person(p, inTeam = false) {
+		const row = element('li', 'list-item shuffle-person');
+		const info = element('div', 'shuffle-person-info');
+		info.append(element('strong', '', p.name));
+		const badges = element('div', 'shuffle-person-badges');
+		const tier = p.tier[0].toUpperCase() + p.tier.slice(1);
+		badges.append(element('span', 'badge badge-neutral', tier + (p.tier === 'radiant' ? '' : ' ' + p.div)));
+		badges.append(element('span', 'badge ' + (p.vc ? 'badge-success' : 'badge-danger'), p.vc ? 'VCあり' : 'VCなし'));
+		const accepting = manager.state.room.status === 'open' && Date.parse(manager.state.room.expiresAt) > Date.now();
+		badges.append(element('span', 'badge badge-neutral', !accepting ? '受付終了' : p.editLocked ? '情報確定' : '修正可能'));
+		info.append(badges); row.append(info);
+		const remove = element('button', 'button button-danger button-sm', inTeam ? '退出' : '削除');
+		remove.type = 'button'; remove.dataset.removeId = p.id;
+		remove.setAttribute('aria-label', p.name + (inTeam ? 'を退出扱いにする' : 'を削除'));
+		remove.addEventListener('click', () => {
+			if (!confirm(p.name + 'を削除・退出扱いにしますか？\n参加者本人による再編集はできなくなります。')) return;
+			perform(() => manager.remove(p.id));
 		});
-	});
-}
-
-// チーム結果画面から「退出」ボタンが押されたとき
-function leaveMember(teamIndex, memberIndex) {
-	const team = lastTeams[teamIndex];
-	const member = team.members[memberIndex];
-	if (!member) return;
-
-	team.members.splice(memberIndex, 1);
-	team.totalPoints -= member.point;
-	team.vacancies = (team.vacancies || 0) + 1;
-
-	// プレイヤーリストからも削除(退出済みとして扱う)
-	const pIdx = players.findIndex(p => p.id === member.id);
-	if (pIdx !== -1) players.splice(pIdx, 1);
-
-	updatePlayerList();
-	renderTeams(lastTeams);
-	saveState();
-}
-
-/* ---------------- 初回シャッフル ---------------- */
-
-function doInitialShuffle() {
-	const teamCount = parseInt(document.getElementById('team-count').value);
-	const playersWithPoints = players.map(p => ({ ...p, point: getPoint(p) }));
-	try {
-		const result = TeamBalancer.balanceInitial(playersWithPoints, teamCount);
-		lastTeams = result.teams;
-		renderTeams(lastTeams);
-		saveState();
-	} catch (error) {
-		alert(error.message);
+		row.append(remove); return row;
 	}
-}
-
-/* ---------------- 退出・途中参加を反映した調整 ---------------- */
-
-function doAdjustment() {
-	const totalVacancies = lastTeams.reduce((sum, t) => sum + (t.vacancies || 0), 0);
-
-	if (totalVacancies === 0) {
-		alert('退出したプレイヤーがいないため、調整の必要はありません。');
-		return;
+	function list(id, players, empty) {
+		const node = $(id); node.replaceChildren(...players.map(p => person(p)));
+		if (!players.length) node.append(element('li', 'shuffle-empty', empty));
 	}
-
-	if (standbyPlayers.length < totalVacancies) {
-		alert(`途中参加プレイヤーが不足しています。あと${totalVacancies - standbyPlayers.length}人必要です。`);
-		return;
+	function controls() {
+		const s = manager?.state;
+		const unavailable = busy || !s || halted || replacingExpired;
+		const pending = Boolean(s?.pending);
+		$('copy-url-btn').disabled = !s || replacingExpired;
+		$('close-room-btn').disabled = unavailable || pending || s.room.status !== 'open' || Date.parse(s.room.expiresAt) <= Date.now();
+		$('new-room-btn').disabled = busy || halted || pending;
+		$('retry-sync-btn').disabled = busy || syncing || halted;
+		$('team-count').disabled = unavailable || pending || Boolean(s?.lastTeams);
+		$('shuffle-btn').disabled = unavailable || pending || !pointsReady || (!s.lastTeams && !s.players.length);
+		$('reset-teams-btn').disabled = unavailable || pending || !s?.lastTeams;
+		app.querySelectorAll('[data-remove-id]').forEach(button => { button.disabled = unavailable || pending; });
 	}
-
-	const standbyWithPoints = standbyPlayers.map(p => ({ ...p, point: getPoint(p) }));
-	try {
-		const result = TeamBalancer.fillVacancies(lastTeams, standbyWithPoints);
-		const selectedIds = new Set(result.selectedPlayerIds);
-		const selectedPlayers = standbyPlayers.filter(player => selectedIds.has(player.id));
-		players.push(...selectedPlayers);
-		standbyPlayers = standbyPlayers.filter(player => !selectedIds.has(player.id));
-		lastTeams = result.teams;
-		updatePlayerList();
-		updateStandbyList();
-		renderTeams(lastTeams);
-		saveState();
-	} catch (error) {
-		alert(error.message);
-	}
-}
-
-/* ---------------- チーム分け実行ボタン ---------------- */
-
-document.getElementById('shuffle-btn').addEventListener('click', function() {
-	if (!pointsData || Object.keys(pointsData).length === 0) {
-		alert('ポイントデータを読み込み中です。少々お待ちください。');
-		return;
-	}
-
-	if (lastTeams) {
-		// 2回目以降: 退出・途中参加を反映した調整のみを行う
-		doAdjustment();
-	} else {
-		// 初回: 全プレイヤーからフルシャッフル
-		if (players.length === 0) {
-			alert('プレイヤーを追加してください');
-			return;
+	function render() {
+		const s = manager?.state;
+		if (!s) { controls(); return; }
+		if (replacingExpired) {
+			$('room-id').textContent = '新しい募集を発行中…';
+			$('room-state').textContent = '更新中';
+			$('room-expiry').textContent = '—';
+			$('registration-url').value = '';
+			$('player-count').textContent = '0';
+			$('standby-player-count').textContent = '0';
+			list('player-list', [], '新しい募集を準備しています。');
+			list('standby-player-list', [], '補充待ちの参加者はいません。');
+			$('result').replaceChildren(); renderKey = '';
+			controls(); return;
 		}
-		doInitialShuffle();
-	}
-});
-
-document.getElementById('team-count').addEventListener('change', function() {
-	saveState();
-});
-
-/* ---------------- リセットボタン(最初からやり直す用) ---------------- */
-
-(function addResetButton() {
-	const shuffleBtn = document.getElementById('shuffle-btn');
-	if (!shuffleBtn) return;
-
-	const resetBtn = document.createElement('button');
-	resetBtn.type = 'button';
-	resetBtn.id = 'reset-teams-btn';
-	resetBtn.className = 'button button-secondary';
-	resetBtn.textContent = 'チーム分けをリセット';
-	resetBtn.addEventListener('click', function() {
-		if (!lastTeams) {
-			alert('リセットするチーム分け結果がありません。');
-			return;
+		$('room-id').textContent = s.room.id;
+		$('room-state').textContent = labels[s.room.status];
+		$('room-expiry').textContent = new Date(s.room.expiresAt).toLocaleString('ja-JP');
+		const url = new URL(app.dataset.registerUrl, location.origin);
+		url.searchParams.set('id', s.room.id);
+		$('registration-url').value = url.href;
+		if (document.activeElement !== $('team-count')) $('team-count').value = s.teamCount;
+		const key = JSON.stringify([s.room.id, s.room.status, s.players, s.standbyPlayers, s.lastTeams]);
+		if (renderKey !== key) {
+			renderKey = key;
+			$('player-count').textContent = s.players.length;
+			$('standby-player-count').textContent = s.standbyPlayers.length;
+			list('player-list', s.players, '参加URLを共有して登録を待ちましょう。');
+			list('standby-player-list', s.standbyPlayers, '補充待ちの参加者はいません。');
+			$('result').replaceChildren();
+			if (s.lastTeams) s.lastTeams.forEach((team, index) => {
+				const panel = element('div', 'panel');
+				const header = element('div', 'panel-header shuffle-heading');
+				header.append(element('span', '', 'チーム ' + (index + 1)));
+				header.append(element('span', 'badge badge-neutral', team.totalPoints + ' pts ／ VCなし ' + team.members.filter(p => !p.vc).length + '人'));
+				const members = element('ul', 'list');
+				members.append(...team.members.map(p => person(p, true)));
+				if (team.vacancies) members.append(element('li', 'shuffle-empty', '空き枠: ' + team.vacancies + '人'));
+				panel.append(header, members); $('result').append(panel);
+			});
 		}
-		if (!confirm('チーム分け結果をリセットし、チーム分けをやり直しますか?\nプレイヤーリストは保持されます。')) return;
-		lastTeams = null;
-		document.getElementById('result').innerHTML = '';
-		saveState();
+		controls();
+	}
+	function schedule() {
+		clearTimeout(timer);
+		if (!document.hidden && !busy && !halted && (replacingExpired || !manager?.state || manager.state.pending || manager.state.room.status === 'open')) {
+			timer = setTimeout(refresh, 5000);
+		}
+	}
+	function synchronized() {
+		const s = manager.state;
+		if (!pointsReady) status('ランクポイントを取得できないためチーム分けを停止しています。ページを再読み込みしてください。', true);
+		else status(s?.room.status === 'open' ? '最終取得: ' + new Date().toLocaleTimeString('ja-JP') + ' ／ 5秒ごとに更新しています。' : '受付は終了しています。一覧・結果を保持し、チーム分けや補充を続けられます。');
+	}
+	function failed(error) {
+		status(error.message + (manager?.state?.pending ? '\n確定結果を確認中です。再取得で復旧します。' : ''), true);
+		if ([401, 403, 404].includes(error.status)) {
+			status('募集を取得できません。保存データを保持しています。ページを再読み込みして再確認してください。', true);
+			halted = true;
+		}
+	}
+	async function refresh() {
+		if (busy || syncing || halted) return;
+		if (replacingExpired) return replaceExpired();
+		if (!manager?.state || manager.state.pending) return perform(() => manager.sync(), '保存した結果を確認しています…');
+		clearTimeout(timer); syncing = true; controls();
+		try {
+			const updated = await manager.sync();
+			if (!busy && updated !== false) synchronized();
+		} catch (error) { if (!busy) failed(error); }
+		finally { syncing = false; if (!busy) { render(); schedule(); } }
+	}
+	function replaceExpired() {
+		return perform(async () => {
+			await manager.start();
+			replacingExpired = false;
+		}, '保存期間を過ぎたため、新しい募集を発行しています…');
+	}
+	async function perform(action, message = '処理しています…') {
+		if (busy || halted) return;
+		clearTimeout(timer); busy = true; manager.cancelSync(); controls(); status(message);
+		try {
+			await action();
+			synchronized();
+		} catch (error) { failed(error); }
+		finally { busy = false; render(); schedule(); }
+	}
+	$('copy-url-btn').addEventListener('click', async () => {
+		try { await navigator.clipboard.writeText($('registration-url').value); status('参加URLをコピーしました。'); }
+		catch (_) { $('registration-url').focus(); $('registration-url').select(); status('参加URLを選択しました。コピーして共有してください。'); }
 	});
-
-	shuffleBtn.insertAdjacentElement('afterend', resetBtn);
+	$('retry-sync-btn').addEventListener('click', refresh);
+	$('close-room-btn').addEventListener('click', () => {
+		if (confirm('募集を終了しますか？\n新規登録と情報修正を停止します。一覧と結果は保持されます。受付は再開できません。')) perform(() => manager.close());
+	});
+	$('new-room-btn').addEventListener('click', () => {
+		if (manager.state && !confirm('現在の募集を終了し、新しい募集を作成しますか？\n新しい画面では参加者・チーム結果が空になり、参加URLも変わります。')) return;
+		perform(() => manager.newRoom());
+	});
+	$('shuffle-btn').addEventListener('click', () => perform(() => manager.shuffle(), 'チーム分けを確定しています…'));
+	$('reset-teams-btn').addEventListener('click', () => {
+		if (confirm('チーム分け結果をリセットしますか？\n全員を通常参加へ戻し、受付中なら情報を再び修正できるようにします。')) perform(() => manager.reset());
+	});
+	$('team-count').addEventListener('change', async () => {
+		if (busy || halted) return;
+		const count = Number($('team-count').value);
+		try { await manager.setTeamCount(count); }
+		catch (error) { failed(error); }
+		finally { if (!busy) { render(); schedule(); } }
+	});
+	document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); else clearTimeout(timer); });
+	window.addEventListener('storage', event => { if (event.key?.startsWith(TeamRoom.PREFIX)) refresh(); });
+	async function init() {
+		try {
+			manager = new TeamRoom.RoomManager({
+				api: new TeamRoom.Api(), storage: localStorage, balancer: TeamBalancer,
+				withLock: task => navigator.locks ? navigator.locks.request('valorant-team-shuffle-host', task) : task()
+			});
+			manager.restore();
+			replacingExpired = Boolean(manager.state && (
+				manager.state.room.status === 'expired'
+				|| Date.parse(manager.state.room.expiresAt) <= Date.now()
+			));
+			render();
+		} catch (error) { halted = true; status(error.message, true); controls(); return; }
+		try {
+			const response = await fetch(app.dataset.pointsUrl, { cache: 'no-cache' });
+			if (!response.ok) throw new Error();
+			const points = await response.json();
+			if (!TeamRoom.TIERS.every(tier => Array.isArray(points[tier]) && points[tier].length === (tier === 'radiant' ? 1 : 3) && points[tier].every(Number.isFinite))) throw new Error();
+			manager.points = points; pointsReady = true;
+		} catch (_) {
+			status('ランクポイントを取得できません。ページを再読み込みしてください。', true);
+			// 募集・参加者の取得は継続し、チーム分けのみ無効にする。
+		}
+		if (replacingExpired) await replaceExpired();
+		else if (manager.state && !manager.state.pending) {
+			await refresh();
+			// ブラウザ時計では期限内でも、サーバーが期限切れと判定した場合に対応する。
+			if (manager.state.room.status === 'expired') {
+				replacingExpired = true; render(); await replaceExpired();
+			}
+		}
+		else await perform(() => manager.start(), '募集を準備しています…');
+		if (!pointsReady) status('参加者情報は取得できますが、ランクポイントを取得できないためチーム分けを停止しています。ページを再読み込みしてください。', true);
+	}
+	init();
 })();
-
-/* ---------------- 完全初期化 ---------------- */
-
-document.getElementById('initialize-players-btn').addEventListener('click', function() {
-	if (!hasInitializableState()) return;
-	if (!confirm('参加者、途中参加者、現在のチーム結果および設定がすべて削除されます。\n完全に初期化しますか？')) return;
-
-	players = [];
-	standbyPlayers = [];
-	lastTeams = null;
-	nextPlayerId = 1;
-	document.getElementById('team-count').value = DEFAULT_TEAM_COUNT;
-	document.getElementById('add-player-form').reset();
-	document.getElementById('add-standby-form').reset();
-	document.getElementById('result').innerHTML = '';
-	updatePlayerList();
-	updateStandbyList();
-	removeSavedState();
-	updateInitializeButtonState();
-});
-
-/* ---------------- 初期表示 ---------------- */
-
-loadSavedState();
-updatePlayerList();
-updateStandbyList();
-if (lastTeams) renderTeams(lastTeams);

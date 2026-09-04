@@ -1,0 +1,28 @@
+.shuffle-stack { display: grid; gap: 1.5rem; }
+.shuffle-columns { display: grid; gap: 1.5rem; align-items: start; }
+.shuffle-results { display: grid; gap: 1rem; }
+.shuffle-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; }
+.shuffle-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+.shuffle-url { display: flex; flex-wrap: wrap; gap: .5rem; }
+.shuffle-url input { flex: 1 1 16rem; min-width: 0; }
+.shuffle-meta { display: grid; gap: .5rem; margin-bottom: 1rem; font-size: .875rem; color: #475569; }
+.shuffle-id { overflow-wrap: anywhere; font-family: monospace; }
+.shuffle-status { margin-top: 1rem; white-space: pre-line; overflow-wrap: anywhere; }
+.shuffle-status[data-error="true"] { color: #b91c1c; }
+.shuffle-list { max-height: 24rem; overflow-y: auto; }
+.shuffle-person { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.shuffle-person-info { min-width: 0; overflow-wrap: anywhere; }
+.shuffle-person-badges { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
+.shuffle-person button { flex-shrink: 0; }
+.shuffle-empty { padding: 1.25rem; color: #64748b; font-size: .875rem; }
+.shuffle-register { max-width: 34rem; margin-inline: auto; }
+.shuffle-fields { display: grid; gap: 1rem; padding: 0; border: 0; min-width: 0; }
+.shuffle-check { display: flex; align-items: center; gap: .75rem; }
+.shuffle-count { width: 7rem; }
+.shuffle-help { margin-top: .75rem; }
+.shuffle-block { margin-bottom: 1.5rem; }
+[hidden] { display: none !important; }
+@media (min-width: 900px) {
+	.shuffle-columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+	.shuffle-results { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

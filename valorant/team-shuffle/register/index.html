@@ -1,0 +1,34 @@
+---
+layout: default
+title: チーム分けへの参加登録
+css:
+  - /valorant/static/css/team-shuffle.css
+---
+
+<div class="shuffle-register shuffle-stack">
+	<h1 class="page-title text-center">チーム分けへの参加登録</h1>
+	<section class="panel">
+		<div class="panel-header">参加者情報</div>
+		<div class="panel-body">
+			<p id="registration-room" class="field-help shuffle-block">募集を確認しています。</p>
+			<form id="registration-form">
+				<fieldset id="registration-fields" class="shuffle-fields" disabled>
+					<div><label class="field-label" for="p-name">名前</label><input id="p-name" class="field-control" type="text" maxlength="80" autocomplete="nickname" required></div>
+					<div><label class="field-label" for="p-tier">ランク</label><select id="p-tier" class="field-control">
+						<option value="iron">Iron</option><option value="bronze">Bronze</option><option value="silver">Silver</option><option value="gold">Gold</option><option value="platinum">Platinum</option><option value="diamond">Diamond</option><option value="ascendant">Ascendant</option><option value="immortal">Immortal</option><option value="radiant">Radiant</option>
+					</select></div>
+					<div><label class="field-label" for="p-div">ディビジョン</label><select id="p-div" class="field-control"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+					<label class="shuffle-check"><input id="p-vc" type="checkbox" checked>ボイスチャットあり</label>
+					<button id="registration-submit" class="button button-primary" type="submit">参加登録する</button>
+				</fieldset>
+			</form>
+			<p id="registration-status" class="field-help shuffle-status" role="status" aria-live="polite"></p>
+			<button id="registration-retry" class="button button-secondary shuffle-help" type="button" hidden>再確認する</button>
+			<p class="field-help shuffle-help">同じブラウザから登録情報を修正できます。チームに入った後は修正できません。途中参加で補充待ちの間は修正可能です。</p>
+		</div>
+	</section>
+	<noscript>参加登録にはJavaScriptを有効にしてください。</noscript>
+</div>
+
+<script src="{{ '/valorant/static/js/team-room.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
+<script src="{{ '/valorant/static/js/team-register.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
