@@ -22,9 +22,9 @@
 		$('registration-fields').disabled = !canEdit;
 		$('registration-submit').textContent = data.participant ? '登録情報を更新する' : '参加登録する';
 		division();
-		const reason = { closed: '募集は終了しました。情報の修正はできません。', expired: '募集の有効期限が切れました。', removed: '主催者により削除・退出扱いになっています。', locked: 'チーム分けが確定したため、情報の修正はできません。' };
+		const reason = { closed: '募集は終了しました。情報の修正はできません。', expired: '募集の有効期限が切れました。', removed: '主催者により削除されました。受付中は再登録できます。サーバーの状態を確認しています。', locked: 'チーム分けが確定したため、情報の修正はできません。' };
 		message(canEdit ? (data.participant ? '登録済みです。現在は情報を修正できます。' : '情報を入力して参加登録してください。') : (reason[data.reason] || '現在は情報を修正できません。'));
-		stopped = data.room.status !== 'open' || data.reason === 'removed';
+		stopped = data.room.status !== 'open';
 		$('registration-retry').hidden = true;
 	}
 	async function refresh(fill = false) {
