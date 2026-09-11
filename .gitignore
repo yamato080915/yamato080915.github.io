@@ -7,3 +7,4 @@ AGENTS.md
 node_modules
 .pnpm-store
 valorant/team-shuffle/API.md
+supabase/*

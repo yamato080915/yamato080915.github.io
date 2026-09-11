@@ -5,8 +5,11 @@
 	else root.TeamRoom = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this, function() {
 	'use strict';
-	const API_BASE = 'https://yamato0915.xsrv.jp/api/valorant/team-shuffle';
-	const PREFIX = 'valorant.teamShuffle.room.v2.';
+	// Supabase DashboardのConnect画面に表示される公開情報を設定する。
+	const SUPABASE_URL = 'https://ohzhrcymowwfvbfxtkcj.supabase.co';
+	const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_v9RCRhsUbAyB_lCvkCq2Zg_ioCD-2qS';
+	const API_BASE = `${SUPABASE_URL}/rest/v1/rpc`;
+	const PREFIX = 'valorant.teamShuffle.room.v3.';
 	const ACTIVE_KEY = PREFIX + 'active';
 	const CREATION_KEY = PREFIX + 'creation';
 	const TIERS = ['iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ascendant', 'immortal', 'radiant'];
@@ -51,7 +54,7 @@
 		return members.length === new Set(members).size;
 	}
 	function validateState(state) {
-		if (!state || state.schemaVersion !== 2 || !validRoom(state.room) || !isToken(state.organizerToken)
+		if (!state || state.schemaVersion !== 3 || !validRoom(state.room) || !isToken(state.organizerToken)
 			|| !Array.isArray(state.players) || !Array.isArray(state.standbyPlayers)
 			|| ![...state.players, ...state.standbyPlayers].every(validPlayer)
 			|| !Number.isInteger(state.teamCount) || state.teamCount < 2 || state.teamCount > 100) return false;
@@ -69,27 +72,84 @@
 	class ApiError extends Error {
 		constructor(message, status = 0, code = 'network_error') { super(message); this.status = status; this.code = code; }
 	}
+	function rpcRequest(path, method, token, body) {
+		const verb = method.toUpperCase();
+		let match;
+		if (path === '/rooms' && verb === 'POST') return {
+			name: 'team_shuffle_create_room',
+			body: { p_room_id: body?.id ?? null, p_organizer_token: body?.organizerToken ?? null }
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)$/)) && verb === 'GET') return {
+			name: 'team_shuffle_get_room', body: { p_room_id: match[1] }
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/participants$/)) && verb === 'GET') return {
+			name: 'team_shuffle_get_participants',
+			body: { p_room_id: match[1], p_organizer_token: token ?? null }
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/registration$/)) && verb === 'GET') return {
+			name: 'team_shuffle_get_registration',
+			body: { p_room_id: match[1], p_participant_token: token ?? null }
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/registration$/)) && verb === 'PUT') return {
+			name: 'team_shuffle_put_registration',
+			body: {
+				p_room_id: match[1], p_participant_token: token ?? null,
+				p_name: body?.name ?? null, p_tier: body?.tier ?? null,
+				p_div: body?.div ?? null, p_vc: body?.vc ?? null
+			}
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/edit-locks$/)) && verb === 'PUT') return {
+			name: 'team_shuffle_set_edit_locks',
+			body: {
+				p_room_id: match[1], p_organizer_token: token ?? null,
+				p_operation_id: body?.operationId ?? null,
+				p_expected_revision: body?.expectedRevision ?? null,
+				p_participant_ids: body?.participantIds ?? null
+			}
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/participants\/([^/]+)$/)) && verb === 'DELETE') return {
+			name: 'team_shuffle_remove_participant',
+			body: { p_room_id: match[1], p_organizer_token: token ?? null, p_participant_id: match[2] }
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/close$/)) && verb === 'POST') return {
+			name: 'team_shuffle_close_room',
+			body: { p_room_id: match[1], p_organizer_token: token ?? null }
+		};
+		throw new ApiError('API要求が不正です。ページを再読み込みしてください。', 0, 'invalid_request');
+	}
+	function validSupabaseConfig(url, key) {
+		return /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(url)
+			&& typeof key === 'string' && key.startsWith('sb_publishable_');
+	}
 	class Api {
-		constructor(fetcher = (...args) => fetch(...args)) { this.fetcher = fetcher; }
+		constructor(fetcher = (...args) => fetch(...args), config = {}) {
+			this.fetcher = fetcher;
+			this.url = (config.url || SUPABASE_URL).replace(/\/$/, '');
+			this.key = config.key || SUPABASE_PUBLISHABLE_KEY;
+		}
 		async request(path, { method = 'GET', token, body, signal } = {}) {
+			if (!validSupabaseConfig(this.url, this.key)) {
+				throw new ApiError('Supabaseの接続情報が未設定です。管理者へ連絡してください。', 0, 'configuration_error');
+			}
+			const rpc = rpcRequest(path, method, token, body);
 			const abort = new AbortController();
 			const cancel = () => abort.abort();
 			if (signal?.aborted) cancel();
 			else signal?.addEventListener('abort', cancel, { once: true });
 			const timer = setTimeout(() => abort.abort(), 10000);
 			try {
-				const headers = { Accept: 'application/json' };
-				if (token) {
-					headers.Authorization = `Bearer ${token}`;
-					// CGIでAuthorizationが除去される環境にも同じ認証情報を届ける。
-					headers['X-Team-Shuffle-Authorization'] = headers.Authorization;
-				}
-				if (body !== undefined) headers['Content-Type'] = 'application/json';
-				// 応答の保存禁止はAPIのCache-Controlに任せ、CORS事前確認は再利用する。
-				const res = await this.fetcher(API_BASE + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), signal: abort.signal, cache: 'default', credentials: 'omit' });
+				const headers = { Accept: 'application/json', 'Content-Type': 'application/json', apikey: this.key };
+				const res = await this.fetcher(`${this.url}/rest/v1/rpc/${rpc.name}`, {
+					method: 'POST', headers, body: JSON.stringify(rpc.body),
+					signal: abort.signal, cache: 'default', credentials: 'omit'
+				});
 				let data;
 				try { data = await res.json(); } catch (_) { throw new ApiError('APIから正しい応答がありません。時間をおいて再試行してください。', res.status); }
-				if (!res.ok) throw new ApiError(data.message || '処理を完了できませんでした。', res.status, data.code);
+				if (!res.ok) {
+					const appCodes = new Set(['invalid_request', 'unauthorized', 'forbidden', 'not_found', 'closed', 'expired', 'locked', 'revision_conflict']);
+					const code = appCodes.has(data?.details) ? data.details : (data?.code || 'request_failed');
+					throw new ApiError(data?.message || '処理を完了できませんでした。', res.status, code);
+				}
 				return data;
 			} catch (error) {
 				if (signal?.aborted) throw new ApiError('取得を中断しました。', 0, 'request_cancelled');
@@ -196,7 +256,7 @@
 			if (!isId(draft.id) || !isToken(draft.organizerToken)) throw new Error('募集作成の保存データが不正です。');
 			const snapshot = validateSnapshot(await this.api.request('/rooms', { method: 'POST', body: draft }));
 			if (snapshot.room.id !== draft.id) throw new Error('作成した募集IDが一致しません。');
-			const next = { schemaVersion: 2, room: snapshot.room, organizerToken: draft.organizerToken, players: snapshot.participants, standbyPlayers: [], lastTeams: null, teamCount: 2, pending: null };
+			const next = { schemaVersion: 3, room: snapshot.room, organizerToken: draft.organizerToken, players: snapshot.participants, standbyPlayers: [], lastTeams: null, teamCount: 2, pending: null };
 			this.write(PREFIX + draft.id, next);
 			this.write(ACTIVE_KEY, draft.id);
 			this.state = next;

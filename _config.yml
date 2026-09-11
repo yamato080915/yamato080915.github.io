@@ -1,4 +1,6 @@
 include:
   - .well-known
+exclude:
+  - supabase
 plugins:
   - jekyll-redirect-from
