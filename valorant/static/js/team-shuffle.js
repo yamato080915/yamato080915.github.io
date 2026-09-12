@@ -21,6 +21,7 @@
 		const badges = element('div', 'shuffle-person-badges');
 		const tier = p.tier[0].toUpperCase() + p.tier.slice(1);
 		badges.append(element('span', 'badge badge-neutral', tier + (p.tier === 'radiant' ? '' : ' ' + p.div)));
+		if (pointsReady) badges.append(element('span', 'badge badge-primary', manager.point(p) + ' pts'));
 		badges.append(element('span', 'badge ' + (p.vc ? 'badge-success' : 'badge-danger'), p.vc ? 'VCあり' : 'VCなし'));
 		const accepting = manager.state.room.status === 'open' && Date.parse(manager.state.room.expiresAt) > Date.now();
 		badges.append(element('span', 'badge badge-neutral', !accepting ? '受付終了' : p.editLocked ? '情報確定' : '修正可能'));
@@ -73,7 +74,7 @@
 		url.searchParams.set('id', s.room.id);
 		$('registration-url').value = url.href;
 		if (document.activeElement !== $('team-count')) $('team-count').value = s.teamCount;
-		const key = JSON.stringify([s.room.id, s.room.status, s.players, s.standbyPlayers, s.lastTeams]);
+		const key = JSON.stringify([pointsReady, s.room.id, s.room.status, s.players, s.standbyPlayers, s.lastTeams]);
 		if (renderKey !== key) {
 			renderKey = key;
 			$('player-count').textContent = s.players.length;
