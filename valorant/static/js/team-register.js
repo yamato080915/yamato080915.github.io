@@ -4,64 +4,136 @@
 	const id = new URL(location.href).searchParams.get('id');
 	const api = new TeamRoom.Api();
 	const key = `${TeamRoom.PREFIX}registration.${id}`;
-	let token, busy = false, timer, hydrated = false, stopped = false, canEdit = false;
-	let refreshController = null, requestVersion = 0;
+	const modeLabels = { peak: '最高ランク', current: '現ランク' };
+	let token, timer, cooldownTimer, hydrated = false, stopped = false, canEdit = false;
+	let busyLookup = false, busySubmit = false, cooldownUntil = 0, roomRankMode = 'peak';
+	let participant = null, verification = null, refreshController = null, requestVersion = 0;
+
 	function message(text, error = false) { $('registration-status').textContent = text; $('registration-status').dataset.error = String(error); }
-	function division() { const radiant = $('p-tier').value === 'radiant'; if (radiant) $('p-div').value = '1'; $('p-div').disabled = radiant; }
+	function rankMessage(text, error = false) {
+		const node = $('rank-lookup-result'); node.hidden = false; node.textContent = text; node.dataset.error = String(error);
+	}
+	function riotInput() { return { gameName: $('p-riot-name').value.trim(), tagline: $('p-riot-tag').value.trim() }; }
+	function sameRiotId(a, b) {
+		return Boolean(a && b) && a.gameName.trim().toLocaleLowerCase() === b.gameName.trim().toLocaleLowerCase()
+			&& a.tagline.trim().toLocaleLowerCase() === b.tagline.trim().toLocaleLowerCase();
+	}
+	function rankLabel(value) {
+		if (!value) return '';
+		if (value.tier === 'unranked') return 'ランクなし';
+		const tier = value.tier[0].toUpperCase() + value.tier.slice(1);
+		return tier + (value.tier === 'radiant' ? '' : ` ${value.div}`);
+	}
+	function savedVerification() {
+		if (!participant?.riotId || participant.rankModeVerified !== roomRankMode || !sameRiotId(participant.riotId, riotInput())) return null;
+		return { saved: true, verificationId: null, riotId: participant.riotId, rankMode: participant.rankModeVerified,
+			tier: participant.tier, div: participant.div, rankLabel: rankLabel(participant) };
+	}
+	function matchingVerification() {
+		if (verification && verification.rankMode === roomRankMode && sameRiotId(verification.riotId, riotInput())) return verification;
+		return savedVerification();
+	}
+	function formValue() {
+		const riotId = riotInput();
+		return { name: $('p-name').value.trim(), riotName: riotId.gameName, riotTag: riotId.tagline, vc: $('p-vc').checked, consent: $('p-rank-consent').checked };
+	}
+	function updateControls() {
+		const busy = busyLookup || busySubmit;
+		$('registration-fields').disabled = !canEdit || busy;
+		const valid = TeamRoom.validateRegistrationInput(formValue());
+		const wait = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+		const current = matchingVerification(), saved = Boolean(current?.saved);
+		$('rank-lookup-btn').disabled = !canEdit || busy || !valid || wait > 0 || saved;
+		$('rank-lookup-btn').textContent = saved ? '保存済みランクを使用' : wait > 0 ? `ランクを取得（${wait}秒）` : (busyLookup ? 'ランクを取得中…' : 'ランクを取得');
+		$('registration-submit').disabled = !canEdit || busy || !valid || !current;
+	}
+	function showVerified(value, reused = false) {
+		const label = value.tier === 'unranked' ? rankLabel(value) : (value.rankLabel || rankLabel(value));
+		rankMessage(`${modeLabels[value.rankMode] || 'ランク'}: ${label}${reused ? '（保存済み）' : ''}`);
+	}
+	function reconcileVerification() {
+		if (verification && (!sameRiotId(verification.riotId, riotInput()) || verification.rankMode !== roomRankMode)) verification = null;
+		const current = matchingVerification();
+		if (current) showVerified(current, Boolean(current.saved));
+		else rankMessage(`${modeLabels[roomRankMode]}を取得してください。`);
+		updateControls();
+	}
 	function render(data, fill) {
 		TeamRoom.validateRegistrationSnapshot(data, id);
-		$('registration-form').dataset.rankMode = data.room.rankMode;
+		const previousMode = roomRankMode;
+		roomRankMode = data.room.rankMode; participant = data.participant;
+		$('registration-form').dataset.rankMode = roomRankMode;
 		$('registration-room').textContent = `募集ID: ${id} ／ 期限: ${new Date(data.room.expiresAt).toLocaleString('ja-JP')}`;
-		if (data.participant && (fill || !hydrated)) {
-			$('p-name').value = data.participant.name; $('p-tier').value = data.participant.tier;
-			$('p-div').value = data.participant.div; $('p-vc').checked = data.participant.vc;
+		if (participant && (fill || !hydrated)) {
+			$('p-name').value = participant.name; $('p-vc').checked = participant.vc;
+			$('p-riot-name').value = participant.riotId?.gameName || '';
+			$('p-riot-tag').value = participant.riotId?.tagline || '';
+			$('p-rank-consent').checked = Boolean(participant.riotId); verification = null;
 		}
+		if (previousMode !== roomRankMode && verification?.rankMode !== roomRankMode) verification = null;
 		hydrated = true;
 		canEdit = data.editable && data.room.status === 'open' && Date.parse(data.room.expiresAt) > Date.now();
-		$('registration-fields').disabled = !canEdit;
-		$('registration-submit').textContent = data.participant ? '登録情報を更新する' : '参加登録する';
-		division();
-		const reason = { closed: '募集は終了しました。情報の修正はできません。', expired: '募集の有効期限が切れました。', removed: '主催者により削除されました。受付中は再登録できます。サーバーの状態を確認しています。', locked: 'チーム分けが確定したため、情報の修正はできません。' };
-		message(canEdit ? (data.participant ? '登録済みです。現在は情報を修正できます。' : '情報を入力して参加登録してください。') : (reason[data.reason] || '現在は情報を修正できません。'));
-		stopped = data.room.status !== 'open';
-		$('registration-retry').hidden = true;
+		$('registration-submit').textContent = participant ? '登録情報を更新する' : '参加登録する';
+		const reason = { closed: '募集は終了しました。情報の修正はできません。', expired: '募集の有効期限が切れました。', removed: '主催者により削除されました。受付中は再登録できます。', locked: 'チーム分けが確定したため、情報の修正はできません。' };
+		message(canEdit ? (participant ? '登録済みです。現在は情報を修正できます。' : '情報を入力し、ランクを取得して参加登録してください。') : (reason[data.reason] || '現在は情報を修正できません。'));
+		stopped = data.room.status !== 'open'; $('registration-retry').hidden = true; reconcileVerification();
 	}
+	function schedule() { clearTimeout(timer); if (!busyLookup && !busySubmit && !stopped && !document.hidden) timer = setTimeout(refresh, 5000); }
 	async function refresh(fill = false) {
-		if (busy || refreshController || !token) return;
+		if (busyLookup || busySubmit || refreshController || !token) return;
 		clearTimeout(timer);
-		const controller = new AbortController(), version = ++requestVersion;
-		refreshController = controller;
+		const controller = new AbortController(), version = ++requestVersion; refreshController = controller;
 		try {
 			const data = await api.request(`/rooms/${id}/registration`, { token, signal: controller.signal });
 			if (version === requestVersion) render(data, fill);
-		}
-		catch (error) {
+		} catch (error) {
 			if (version !== requestVersion || controller.signal.aborted) return;
-			if (error.status >= 400 && error.status < 500) { canEdit = false; $('registration-fields').disabled = true; }
+			if (error.status >= 400 && error.status < 500) { canEdit = false; updateControls(); }
 			message(error.message, true); $('registration-retry').hidden = false;
 			if ([401, 403, 404].includes(error.status)) stopped = true;
-		} finally {
-			if (refreshController === controller) refreshController = null;
-			if (version === requestVersion) schedule();
-		}
+		} finally { if (refreshController === controller) refreshController = null; if (version === requestVersion) schedule(); }
 	}
-	function schedule() { clearTimeout(timer); if (!busy && !stopped && !document.hidden) timer = setTimeout(refresh, 5000); }
-	$('p-tier').addEventListener('change', division);
+	function stopRefresh() { requestVersion++; refreshController?.abort(); refreshController = null; clearTimeout(timer); }
+	function startCooldown(seconds) {
+		cooldownUntil = Date.now() + Math.max(1, seconds) * 1000; clearInterval(cooldownTimer);
+		cooldownTimer = setInterval(() => {
+			updateControls();
+			if (Date.now() >= cooldownUntil) { clearInterval(cooldownTimer); cooldownTimer = null; }
+		}, 250);
+	}
+
+	for (const input of [$('p-riot-name'), $('p-riot-tag')]) input.addEventListener('input', reconcileVerification);
+	for (const input of [$('p-name'), $('p-vc'), $('p-rank-consent')]) input.addEventListener('input', updateControls);
+	$('rank-lookup-btn').addEventListener('click', async () => {
+		if (!canEdit || busyLookup || busySubmit || !TeamRoom.validateRegistrationInput(formValue())) return;
+		stopRefresh(); busyLookup = true; updateControls(); rankMessage('ランクを取得しています…');
+		try {
+			const value = formValue();
+			const result = TeamRoom.validateRankVerification(await api.lookupRank({ roomId: id, participantToken: token,
+				riotName: value.riotName, riotTag: value.riotTag, consent: value.consent }), id);
+			verification = result; $('p-riot-name').value = result.riotId.gameName; $('p-riot-tag').value = result.riotId.tagline;
+			showVerified(result); message('ランクを確認しました。参加登録できます。');
+		} catch (error) {
+			verification = null;
+			const wait = Math.max(0, Number(error.retryAfter) || 0);
+			if (error.status === 429 && wait) startCooldown(wait);
+			rankMessage(error.message, true); message('ランクを取得できませんでした。入力内容を確認して再試行してください。', true);
+		} finally { busyLookup = false; updateControls(); schedule(); }
+	});
 	$('registration-form').addEventListener('submit', async event => {
 		event.preventDefault();
-		if (busy || !canEdit) return;
-		const body = { name: $('p-name').value.trim(), tier: $('p-tier').value, div: Number($('p-div').value), vc: $('p-vc').checked };
-		if (!TeamRoom.validateRegistration(body)) { message('名前（1〜80文字）、ランク、ディビジョンを確認してください。', true); return; }
-		// 定期取得の完了を待たず送信する。中断した古い応答は画面へ反映しない。
-		requestVersion++; refreshController?.abort(); refreshController = null;
-		clearTimeout(timer); busy = true; $('registration-fields').disabled = true;
-		message('登録情報を保存しています…');
+		const verified = matchingVerification(), value = formValue();
+		if (busyLookup || busySubmit || !canEdit || !verified) return;
+		if (!TeamRoom.validateRegistrationInput(value)) { message('表示名、Riot ID、VC設定、同意を確認してください。', true); return; }
+		stopRefresh(); busySubmit = true; updateControls(); message('登録情報を保存しています…');
 		try {
+			const body = { ...value, verificationId: verified.saved ? null : verified.verificationId };
 			render(await api.request(`/rooms/${id}/registration`, { method: 'PUT', token, body }), true);
 			message('登録情報を保存しました。主催者の画面へ順次反映されます。');
 		} catch (error) {
-			canEdit = false; message(error.message, true); $('registration-retry').hidden = false;
-		} finally { busy = false; schedule(); }
+			if (['verification_required', 'verification_expired'].includes(error.code)) verification = null;
+			message(error.message, true); $('registration-retry').hidden = false;
+		} finally { busySubmit = false; reconcileVerification(); schedule(); }
 	});
 	$('registration-retry').addEventListener('click', () => { stopped = false; refresh(); });
 	document.addEventListener('visibilitychange', () => { if (!document.hidden && !stopped) refresh(); else clearTimeout(timer); });

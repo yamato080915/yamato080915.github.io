@@ -12,8 +12,9 @@
 	const PREFIX = 'valorant.teamShuffle.room.v3.';
 	const ACTIVE_KEY = PREFIX + 'active';
 	const CREATION_KEY = PREFIX + 'creation';
-	const TIERS = ['iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ascendant', 'immortal', 'radiant'];
+	const TIERS = ['unranked', 'iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ascendant', 'immortal', 'radiant'];
 	const RANK_MODES = ['peak', 'current'];
+	const RIOT_ID_MAX = 64;
 	const isId = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 	const isToken = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
 	const clone = value => JSON.parse(JSON.stringify(value));
@@ -23,10 +24,35 @@
 	function validateRegistration(value) {
 		return value && typeof value.name === 'string' && value.name.trim().length > 0 && [...value.name].length <= 80
 			&& TIERS.includes(value.tier) && Number.isInteger(value.div) && value.div >= 1 && value.div <= 3
-			&& (value.tier !== 'radiant' || value.div === 1) && typeof value.vc === 'boolean';
+			&& (!['radiant', 'unranked'].includes(value.tier) || value.div === 1) && typeof value.vc === 'boolean';
+	}
+	function validRiotPart(value) {
+		return typeof value === 'string' && value.trim().length > 0 && [...value.trim()].length <= RIOT_ID_MAX
+			&& !/[#\u0000-\u001f\u007f]/.test(value);
+	}
+	function validateRegistrationInput(value) {
+		return value && typeof value.name === 'string' && value.name.trim().length > 0 && [...value.name.trim()].length <= 80
+			&& validRiotPart(value.riotName) && validRiotPart(value.riotTag)
+			&& typeof value.vc === 'boolean' && value.consent === true;
+	}
+	function validRiotId(value) {
+		return value && validRiotPart(value.gameName) && validRiotPart(value.tagline);
+	}
+	function normalizePlayerIdentity(p) {
+		if (!p || typeof p !== 'object') return;
+		if (p.riotId === undefined) p.riotId = null;
+		if (p.rankModeVerified === undefined) p.rankModeVerified = null;
+		if (p.rankVerifiedAt === undefined) p.rankVerifiedAt = null;
+	}
+	function validVerifiedIdentity(p) {
+		if (p.riotId === null) return p.rankModeVerified === null && p.rankVerifiedAt === null;
+		return validRiotId(p.riotId) && RANK_MODES.includes(p.rankModeVerified)
+			&& typeof p.rankVerifiedAt === 'string' && Number.isFinite(Date.parse(p.rankVerifiedAt));
 	}
 	function validPlayer(p) {
-		return validateRegistration(p) && isId(p.id) && typeof p.editLocked === 'boolean' && Number.isInteger(p.version) && p.version >= 1;
+		normalizePlayerIdentity(p);
+		return validateRegistration(p) && validVerifiedIdentity(p) && isId(p.id)
+			&& typeof p.editLocked === 'boolean' && Number.isInteger(p.version) && p.version >= 1;
 	}
 	function validRoom(room) {
 		return room && isId(room.id) && ['open', 'closed', 'expired'].includes(room.status)
@@ -45,8 +71,20 @@
 		if (!value?.room || value.room.id !== roomId || !['open', 'closed', 'expired'].includes(value.room.status)
 			|| !Number.isFinite(Date.parse(value.room.expiresAt)) || !RANK_MODES.includes(value.room.rankMode)
 			|| typeof value.editable !== 'boolean'
-			|| (value.participant !== null && !validateRegistration(value.participant))) {
+			|| (value.participant !== null && !validPlayer(value.participant))) {
 			throw new Error('登録情報の応答が不正です。');
+		}
+		return value;
+	}
+	function validateRankVerification(value, roomId) {
+		const validVerificationId = isId(value?.verificationId) || (value?.saved === true && value.verificationId === null);
+		if (!value || !validVerificationId || !validRiotId(value.riotId)
+			|| !RANK_MODES.includes(value.rankMode) || !TIERS.includes(value.tier)
+			|| !Number.isInteger(value.div) || value.div < 1 || value.div > 3
+			|| (['radiant', 'unranked'].includes(value.tier) && value.div !== 1)
+			|| typeof value.rankLabel !== 'string' || !value.rankLabel.trim()
+			|| !Number.isFinite(Date.parse(value.expiresAt))) {
+			throw new Error('ランク取得の応答が不正です。');
 		}
 		return value;
 	}
@@ -97,6 +135,13 @@
 		// 旧保存データでは一度でも登録があったか判別できないため、取得完了までは安全側で固定する。
 		if (state.room.rankModeEditable === undefined) state.room.rankModeEditable = false;
 	}
+	function normalizePlayerIdentityState(state) {
+		if (!state) return;
+		const collections = [state.players, state.standbyPlayers];
+		if (Array.isArray(state.lastTeams)) collections.push(...state.lastTeams.map(team => team.members));
+		if (Array.isArray(state.pending?.teams)) collections.push(...state.pending.teams.map(team => team.members));
+		for (const players of collections) if (Array.isArray(players)) players.forEach(normalizePlayerIdentity);
+	}
 	class ApiError extends Error {
 		constructor(message, status = 0, code = 'network_error') { super(message); this.status = status; this.code = code; }
 	}
@@ -126,11 +171,13 @@
 			body: { p_room_id: match[1], p_participant_token: token ?? null }
 		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/registration$/)) && verb === 'PUT') return {
-			name: 'team_shuffle_put_registration',
+			name: 'team_shuffle_put_verified_registration',
 			body: {
 				p_room_id: match[1], p_participant_token: token ?? null,
-				p_name: body?.name ?? null, p_tier: body?.tier ?? null,
-				p_div: body?.div ?? null, p_vc: body?.vc ?? null
+				p_verification_id: body?.verificationId ?? null,
+				p_name: body?.name ?? null, p_riot_name: body?.riotName ?? null,
+				p_riot_tag: body?.riotTag ?? null, p_vc: body?.vc ?? null,
+				p_consent: body?.consent ?? null
 			}
 		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/edit-locks$/)) && verb === 'PUT') return {
@@ -181,7 +228,7 @@
 				let data;
 				try { data = await res.json(); } catch (_) { throw new ApiError('APIから正しい応答がありません。時間をおいて再試行してください。', res.status); }
 				if (!res.ok) {
-					const appCodes = new Set(['invalid_request', 'unauthorized', 'forbidden', 'not_found', 'closed', 'expired', 'locked', 'rank_mode_locked', 'revision_conflict']);
+					const appCodes = new Set(['invalid_request', 'unauthorized', 'forbidden', 'not_found', 'closed', 'expired', 'locked', 'rank_mode_locked', 'revision_conflict', 'consent_required', 'invalid_riot_id', 'duplicate_riot_id', 'verification_required', 'verification_expired']);
 					const code = appCodes.has(data?.details) ? data.details : (data?.code || 'request_failed');
 					throw new ApiError(data?.message || '処理を完了できませんでした。', res.status, code);
 				}
@@ -190,6 +237,31 @@
 				if (signal?.aborted) throw new ApiError('取得を中断しました。', 0, 'request_cancelled');
 				if (error instanceof ApiError) throw error;
 				throw new ApiError('サーバーに接続できません。入力内容を保持しています。再試行してください。');
+			} finally { clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
+		}
+		async lookupRank(body, { signal } = {}) {
+			if (!validSupabaseConfig(this.url, this.key)) throw new ApiError('Supabaseの接続情報が未設定です。管理者へ連絡してください。', 0, 'configuration_error');
+			const abort = new AbortController();
+			const cancel = () => abort.abort();
+			if (signal?.aborted) cancel(); else signal?.addEventListener('abort', cancel, { once: true });
+			const timer = setTimeout(() => abort.abort(), 15000);
+			try {
+				const res = await this.fetcher(`${this.url}/functions/v1/team-shuffle-rank-lookup`, {
+					method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', apikey: this.key },
+					body: JSON.stringify(body), signal: abort.signal, cache: 'no-store', credentials: 'omit'
+				});
+				let data;
+				try { data = await res.json(); } catch (_) { throw new ApiError('ランク取得APIから正しい応答がありません。', res.status); }
+				if (!res.ok) {
+					const error = new ApiError(data?.message || 'ランクを取得できませんでした。', res.status, data?.code || 'rank_lookup_unavailable');
+					error.retryAfter = Math.max(0, Number(data?.retryAfter ?? res.headers?.get?.('Retry-After')) || 0);
+					throw error;
+				}
+				return data;
+			} catch (error) {
+				if (signal?.aborted) throw new ApiError('取得を中断しました。', 0, 'request_cancelled');
+				if (error instanceof ApiError) throw error;
+				throw new ApiError('ランク取得APIに接続できません。入力内容を保持しています。');
 			} finally { clearTimeout(timer); signal?.removeEventListener('abort', cancel); }
 		}
 	}
@@ -217,6 +289,7 @@
 			if (!active) { this.state = null; return; }
 			const saved = this.read(PREFIX + active);
 			normalizeRankModeState(saved);
+			normalizePlayerIdentityState(saved);
 			if (!isId(active) || !validateState(saved) || saved.room.id !== active) throw new Error('募集の保存データが不正です。データを保護するため自動作成を停止しました。');
 			normalizeFixedState(saved);
 			this.state = saved;
@@ -422,5 +495,5 @@
 		shuffle() { return this.changeTeams(false); }
 		reset() { return this.changeTeams(true); }
 	}
-	return { API_BASE, ACTIVE_KEY, CREATION_KEY, PREFIX, TIERS, RANK_MODES, isId, isToken, randomToken, validateRegistration, validateRegistrationSnapshot, validateSnapshot, validateState, ApiError, Api, RoomManager };
+	return { API_BASE, ACTIVE_KEY, CREATION_KEY, PREFIX, TIERS, RANK_MODES, isId, isToken, randomToken, validateRegistration, validateRegistrationInput, validateRankVerification, validateRegistrationSnapshot, validateSnapshot, validateState, ApiError, Api, RoomManager };
 });

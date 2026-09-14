@@ -19,8 +19,10 @@
 		const info = element('div', 'shuffle-person-info');
 		info.append(element('strong', '', p.name));
 		const badges = element('div', 'shuffle-person-badges');
-		const tier = p.tier[0].toUpperCase() + p.tier.slice(1);
-		badges.append(element('span', 'badge badge-neutral', tier + (p.tier === 'radiant' ? '' : ' ' + p.div)));
+		const tier = p.tier === 'unranked' ? 'ランクなし' : p.tier[0].toUpperCase() + p.tier.slice(1);
+		if (p.riotId) badges.append(element('span', 'badge badge-neutral', `${p.riotId.gameName}#${p.riotId.tagline}`));
+		else badges.append(element('span', 'badge badge-neutral', '旧方式登録'));
+		badges.append(element('span', 'badge badge-neutral', tier + (['radiant', 'unranked'].includes(p.tier) ? '' : ' ' + p.div)));
 		if (pointsReady) badges.append(element('span', 'badge badge-primary', manager.point(p) + ' pts'));
 		badges.append(element('span', 'badge ' + (p.vc ? 'badge-success' : 'badge-danger'), p.vc ? 'VCあり' : 'VCなし'));
 		const accepting = manager.state.room.status === 'open' && Date.parse(manager.state.room.expiresAt) > Date.now();
@@ -204,7 +206,7 @@
 			const response = await fetch(app.dataset.pointsUrl, { cache: 'no-cache' });
 			if (!response.ok) throw new Error();
 			const points = await response.json();
-			if (!TeamRoom.TIERS.every(tier => Array.isArray(points[tier]) && points[tier].length === (tier === 'radiant' ? 1 : 3) && points[tier].every(Number.isFinite))) throw new Error();
+			if (!TeamRoom.TIERS.every(tier => Array.isArray(points[tier]) && points[tier].length === (['radiant', 'unranked'].includes(tier) ? 1 : 3) && points[tier].every(Number.isFinite))) throw new Error();
 			manager.points = points; pointsReady = true;
 		} catch (_) {
 			status('ランクポイントを取得できません。ページを再読み込みしてください。', true);

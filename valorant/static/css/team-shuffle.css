@@ -31,6 +31,13 @@
 .shuffle-register { max-width: 34rem; margin-inline: auto; }
 .shuffle-fields { display: grid; gap: 1rem; padding: 0; border: 0; min-width: 0; }
 .shuffle-check { display: flex; align-items: center; gap: .75rem; }
+.shuffle-check input { flex: 0 0 auto; }
+.shuffle-consent { align-items: flex-start; line-height: 1.5; }
+.shuffle-riot-id { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(5.5rem, .45fr); align-items: center; gap: .5rem; }
+.shuffle-riot-id label { min-width: 0; }
+.shuffle-riot-separator { color: #64748b; font-weight: 700; }
+.shuffle-rank-result { padding: .8rem 1rem; border: 1px solid #bfdbfe; border-radius: .55rem; color: #1e3a8a; background: #eff6ff; font-weight: 600; }
+.shuffle-rank-result[data-error="true"] { border-color: #fecaca; color: #991b1b; background: #fef2f2; }
 .shuffle-count { width: 7rem; }
 .shuffle-help { margin-top: .75rem; }
 .shuffle-block { margin-bottom: 1.5rem; }
