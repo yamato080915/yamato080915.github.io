@@ -15,6 +15,14 @@ css:
 				<p>募集ID: <span id="room-id" class="shuffle-id">発行中…</span></p>
 				<p>有効期限: <span id="room-expiry">—</span></p>
 			</div>
+			<fieldset id="rank-mode-fields" class="shuffle-rank-mode shuffle-block" disabled>
+				<legend class="field-label">採用するランク</legend>
+				<div class="shuffle-segmented" role="radiogroup" aria-describedby="rank-mode-help">
+					<label><input type="radio" name="rank-mode" value="peak" checked><span>最高ランク</span></label>
+					<label><input type="radio" name="rank-mode" value="current"><span>現ランク</span></label>
+				</div>
+				<p id="rank-mode-help" class="field-help">最初の参加者が登録すると変更できなくなります。</p>
+			</fieldset>
 			<label class="field-label" for="registration-url">参加URL</label>
 			<div class="shuffle-url shuffle-block">
 				<input id="registration-url" class="field-control" type="url" readonly aria-label="参加URL" placeholder="募集を作成すると表示されます">

@@ -9,9 +9,8 @@
 	function message(text, error = false) { $('registration-status').textContent = text; $('registration-status').dataset.error = String(error); }
 	function division() { const radiant = $('p-tier').value === 'radiant'; if (radiant) $('p-div').value = '1'; $('p-div').disabled = radiant; }
 	function render(data, fill) {
-		if (!data?.room || data.room.id !== id || !['open', 'closed', 'expired'].includes(data.room.status)
-			|| !Number.isFinite(Date.parse(data.room.expiresAt)) || typeof data.editable !== 'boolean'
-			|| (data.participant !== null && !TeamRoom.validateRegistration(data.participant))) throw new Error('登録情報の応答が不正です。');
+		TeamRoom.validateRegistrationSnapshot(data, id);
+		$('registration-form').dataset.rankMode = data.room.rankMode;
 		$('registration-room').textContent = `募集ID: ${id} ／ 期限: ${new Date(data.room.expiresAt).toLocaleString('ja-JP')}`;
 		if (data.participant && (fill || !hydrated)) {
 			$('p-name').value = data.participant.name; $('p-tier').value = data.participant.tier;

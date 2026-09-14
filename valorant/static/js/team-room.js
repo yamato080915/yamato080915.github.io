@@ -13,6 +13,7 @@
 	const ACTIVE_KEY = PREFIX + 'active';
 	const CREATION_KEY = PREFIX + 'creation';
 	const TIERS = ['iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ascendant', 'immortal', 'radiant'];
+	const RANK_MODES = ['peak', 'current'];
 	const isId = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 	const isToken = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
 	const clone = value => JSON.parse(JSON.stringify(value));
@@ -30,12 +31,22 @@
 	function validRoom(room) {
 		return room && isId(room.id) && ['open', 'closed', 'expired'].includes(room.status)
 			&& Number.isFinite(Date.parse(room.expiresAt)) && Number.isInteger(room.revision) && room.revision >= 0
-			&& (room.lastOperationId === null || isId(room.lastOperationId));
+			&& (room.lastOperationId === null || isId(room.lastOperationId))
+			&& RANK_MODES.includes(room.rankMode) && typeof room.rankModeEditable === 'boolean';
 	}
 	function validateSnapshot(value) {
 		if (!value || !validRoom(value.room) || !Array.isArray(value.participants) || !value.participants.every(validPlayer)
 			|| new Set(value.participants.map(p => p.id)).size !== value.participants.length) {
 			throw new Error('サーバーから受信した参加者情報が不正です。');
+		}
+		return value;
+	}
+	function validateRegistrationSnapshot(value, roomId) {
+		if (!value?.room || value.room.id !== roomId || !['open', 'closed', 'expired'].includes(value.room.status)
+			|| !Number.isFinite(Date.parse(value.room.expiresAt)) || !RANK_MODES.includes(value.room.rankMode)
+			|| typeof value.editable !== 'boolean'
+			|| (value.participant !== null && !validateRegistration(value.participant))) {
+			throw new Error('登録情報の応答が不正です。');
 		}
 		return value;
 	}
@@ -80,6 +91,12 @@
 		normalizeFixedTeams(state.lastTeams);
 		normalizeFixedTeams(state.pending?.teams);
 	}
+	function normalizeRankModeState(state) {
+		if (!state?.room) return;
+		if (state.room.rankMode === undefined) state.room.rankMode = 'peak';
+		// 旧保存データでは一度でも登録があったか判別できないため、取得完了までは安全側で固定する。
+		if (state.room.rankModeEditable === undefined) state.room.rankModeEditable = false;
+	}
 	class ApiError extends Error {
 		constructor(message, status = 0, code = 'network_error') { super(message); this.status = status; this.code = code; }
 	}
@@ -96,6 +113,13 @@
 		if ((match = path.match(/^\/rooms\/([^/]+)\/participants$/)) && verb === 'GET') return {
 			name: 'team_shuffle_get_participants',
 			body: { p_room_id: match[1], p_organizer_token: token ?? null }
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/rank-mode$/)) && verb === 'PUT') return {
+			name: 'team_shuffle_set_rank_mode',
+			body: {
+				p_room_id: match[1], p_organizer_token: token ?? null,
+				p_rank_mode: body?.rankMode ?? null
+			}
 		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/registration$/)) && verb === 'GET') return {
 			name: 'team_shuffle_get_registration',
@@ -157,7 +181,7 @@
 				let data;
 				try { data = await res.json(); } catch (_) { throw new ApiError('APIから正しい応答がありません。時間をおいて再試行してください。', res.status); }
 				if (!res.ok) {
-					const appCodes = new Set(['invalid_request', 'unauthorized', 'forbidden', 'not_found', 'closed', 'expired', 'locked', 'revision_conflict']);
+					const appCodes = new Set(['invalid_request', 'unauthorized', 'forbidden', 'not_found', 'closed', 'expired', 'locked', 'rank_mode_locked', 'revision_conflict']);
 					const code = appCodes.has(data?.details) ? data.details : (data?.code || 'request_failed');
 					throw new ApiError(data?.message || '処理を完了できませんでした。', res.status, code);
 				}
@@ -192,6 +216,7 @@
 			const active = this.read(ACTIVE_KEY);
 			if (!active) { this.state = null; return; }
 			const saved = this.read(PREFIX + active);
+			normalizeRankModeState(saved);
 			if (!isId(active) || !validateState(saved) || saved.room.id !== active) throw new Error('募集の保存データが不正です。データを保護するため自動作成を停止しました。');
 			normalizeFixedState(saved);
 			this.state = saved;
@@ -325,6 +350,18 @@
 				this.state.teamCount = count; this.save();
 			});
 		}
+		setRankMode(rankMode) {
+			return this.run(async () => {
+				if (!RANK_MODES.includes(rankMode)) throw new Error('ランク入力基準の指定が不正です。');
+				await this.settlePending();
+				try {
+					this.absorb(await this.request('/rank-mode', 'PUT', { rankMode }));
+				} catch (error) {
+					if (error.code === 'rank_mode_locked') await this.pull();
+					throw error;
+				}
+			});
+		}
 		setTeamFixed(index, fixed) {
 			return this.run(() => {
 				if (!this.state.lastTeams || this.state.pending) throw new Error('現在はチームの固定状態を変更できません。');
@@ -385,5 +422,5 @@
 		shuffle() { return this.changeTeams(false); }
 		reset() { return this.changeTeams(true); }
 	}
-	return { API_BASE, ACTIVE_KEY, CREATION_KEY, PREFIX, TIERS, isId, isToken, randomToken, validateRegistration, validateSnapshot, validateState, ApiError, Api, RoomManager };
+	return { API_BASE, ACTIVE_KEY, CREATION_KEY, PREFIX, TIERS, RANK_MODES, isId, isToken, randomToken, validateRegistration, validateRegistrationSnapshot, validateSnapshot, validateState, ApiError, Api, RoomManager };
 });

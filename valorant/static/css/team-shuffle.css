@@ -9,6 +9,15 @@
 .shuffle-team-fixed:has(input:disabled) { cursor: not-allowed; opacity: .55; }
 .shuffle-url { display: flex; flex-wrap: wrap; gap: .5rem; }
 .shuffle-url input { flex: 1 1 16rem; min-width: 0; }
+.shuffle-rank-mode { padding: 0; border: 0; min-width: 0; }
+.shuffle-segmented { display: inline-flex; flex-wrap: wrap; gap: .35rem; padding: .25rem; border: 1px solid #cbd5e1; border-radius: .65rem; background: #f8fafc; }
+.shuffle-segmented label { cursor: pointer; }
+.shuffle-segmented input { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; pointer-events: none; }
+.shuffle-segmented span { display: block; padding: .45rem .8rem; border-radius: .45rem; color: #475569; font-size: .875rem; font-weight: 600; }
+.shuffle-segmented input:checked + span { color: #fff; background: #2563eb; }
+.shuffle-segmented input:focus-visible + span { outline: 2px solid #1d4ed8; outline-offset: 2px; }
+.shuffle-rank-mode:disabled .shuffle-segmented { opacity: .55; }
+.shuffle-rank-mode:disabled .shuffle-segmented label { cursor: not-allowed; }
 .shuffle-meta { display: grid; gap: .5rem; margin-bottom: 1rem; font-size: .875rem; color: #475569; }
 .shuffle-id { overflow-wrap: anywhere; font-family: monospace; }
 .shuffle-status { margin-top: 1rem; white-space: pre-line; overflow-wrap: anywhere; }

@@ -47,6 +47,7 @@
 		$('close-room-btn').disabled = unavailable || pending || s.room.status !== 'open' || Date.parse(s.room.expiresAt) <= Date.now();
 		$('new-room-btn').disabled = busy || halted || pending;
 		$('retry-sync-btn').disabled = busy || syncing || halted;
+		$('rank-mode-fields').disabled = unavailable || syncing || pending || !s?.room.rankModeEditable;
 		$('team-count').disabled = unavailable || pending || Boolean(s?.lastTeams);
 		$('shuffle-btn').disabled = unavailable || pending || !pointsReady || (!s.lastTeams && !s.players.length);
 		$('reset-teams-btn').disabled = unavailable || pending || !s?.lastTeams;
@@ -71,6 +72,7 @@
 		$('room-id').textContent = s.room.id;
 		$('room-state').textContent = labels[s.room.status];
 		$('room-expiry').textContent = new Date(s.room.expiresAt).toLocaleString('ja-JP');
+		app.querySelectorAll('input[name="rank-mode"]').forEach(input => { input.checked = input.value === s.room.rankMode; });
 		const url = new URL(app.dataset.registerUrl, location.origin);
 		url.searchParams.set('id', s.room.id);
 		$('registration-url').value = url.href;
@@ -162,6 +164,9 @@
 		catch (_) { $('registration-url').focus(); $('registration-url').select(); status('参加URLを選択しました。コピーして共有してください。'); }
 	});
 	$('retry-sync-btn').addEventListener('click', refresh);
+	app.querySelectorAll('input[name="rank-mode"]').forEach(input => input.addEventListener('change', () => {
+		if (input.checked) perform(() => manager.setRankMode(input.value), 'ランク入力基準を保存しています…');
+	}));
 	$('close-room-btn').addEventListener('click', () => {
 		if (confirm('募集を終了しますか？\n新規登録と情報修正を停止します。一覧と結果は保持されます。受付は再開できません。')) perform(() => manager.close());
 	});
