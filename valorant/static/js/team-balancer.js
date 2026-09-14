@@ -132,9 +132,7 @@
 		return additions;
 	}
 
-	function buildInitialCandidate(players, targetSizes, windows, rng) {
-		const window = windows[Math.floor(rng() * windows.length)];
-		const targetVcNone = createAdditionTargets(window, rng);
+	function buildTeamsForNoVcTargets(players, targetSizes, targetVcNone, rng) {
 		const vcNonePool = shuffle(players.filter(player => !player.vc), rng);
 		const vcPool = shuffle(players.filter(player => player.vc), rng);
 		const teams = targetSizes.map((size, index) => {
@@ -147,6 +145,11 @@
 		});
 		refreshTeamTotals(teams);
 		return teams;
+	}
+
+	function buildInitialCandidate(players, targetSizes, windows, rng) {
+		const window = windows[Math.floor(rng() * windows.length)];
+		return buildTeamsForNoVcTargets(players, targetSizes, createAdditionTargets(window, rng), rng);
 	}
 
 	function refreshTeamTotals(teams) {
@@ -345,32 +348,13 @@
 		return { teams, score };
 	}
 
-	function fillVacancies(teams, standbyPlayers, options) {
-		const settings = options || {};
-		const rng = settings.rng || Math.random;
-		const restarts = settings.restarts == null ? DEFAULT_RESTARTS : settings.restarts;
-		if (!Array.isArray(teams) || teams.length < 2) throw new Error('チーム分け結果が不正です。');
-		const existingPlayers = teams.flatMap(team => team.members);
-		const existingIds = validatePlayers(existingPlayers, '既存チーム');
-		const standbyIds = validatePlayers(standbyPlayers, '途中参加リスト');
-		for (const id of standbyIds) {
-			if (existingIds.has(id)) throw new Error('既存チームと途中参加リストに同じプレイヤーがいます。');
-		}
-		if (!Number.isInteger(restarts) || restarts < 1) throw new Error('探索回数が不正です。');
-
-		const baseTeams = teams.map(team => {
-			const vacancies = team.vacancies || 0;
-			if (!Number.isInteger(vacancies) || vacancies < 0 || team.members.length + vacancies > 5) {
-				throw new Error('チームの空き枠が不正です。');
-			}
-			return { members: [...team.members], vacancies };
-		});
+	function fillFixedVacancies(baseTeams, standbyPlayers, rng, restarts) {
 		const totalVacancies = baseTeams.reduce((sum, team) => sum + team.vacancies, 0);
-		if (totalVacancies === 0) throw new Error('退出したプレイヤーがいないため、調整の必要はありません。');
-		if (standbyPlayers.length < totalVacancies) {
-			throw new Error(`途中参加プレイヤーが不足しています。あと${totalVacancies - standbyPlayers.length}人必要です。`);
+		if (totalVacancies === 0) {
+			const teams = adjustmentTeams(baseTeams, baseTeams.map(() => []));
+			return { teams, selectedPlayerIds: [], score: evaluateTeams(teams), vcSpreadLimit: 0, candidateCount: 1 };
 		}
-
+		const standbyIds = new Set(standbyPlayers.map(player => player.id));
 		const availableNoVc = standbyPlayers.filter(player => !player.vc).length;
 		const availableVc = standbyPlayers.length - availableNoVc;
 		const minimumSelectedNoVc = Math.max(0, totalVacancies - availableVc);
@@ -401,6 +385,127 @@
 			score: { ...chosen.score },
 			vcSpreadLimit,
 			candidateCount: candidates.length
+		};
+	}
+
+	function rebalanceFlexibleTeams(baseTeams, standbyPlayers, rng, restarts) {
+		const targetSizes = baseTeams.map(team => team.members.length + team.vacancies);
+		const existingPlayers = baseTeams.flatMap(team => team.members);
+		const standbySlots = baseTeams.reduce((sum, team) => sum + team.vacancies, 0);
+		const availableNoVc = standbyPlayers.filter(player => !player.vc).length;
+		const availableVc = standbyPlayers.length - availableNoVc;
+		const existingNoVc = existingPlayers.filter(player => !player.vc).length;
+		const minimumSelectedNoVc = Math.max(0, standbySlots - availableVc);
+		const maximumSelectedNoVc = Math.min(standbySlots, availableNoVc);
+		const windows = feasibleVcWindows(
+			Array(baseTeams.length).fill(0),
+			targetSizes,
+			existingNoVc + minimumSelectedNoVc,
+			existingNoVc + maximumSelectedNoVc
+		);
+		const vcSpreadLimit = windows[0].spread;
+		const candidates = [];
+		for (let restart = 0; restart < restarts; restart++) {
+			const window = windows[Math.floor(rng() * windows.length)];
+			const targetNoVc = createAdditionTargets(window, rng);
+			const selectedNoVcCount = targetNoVc.reduce((sum, value) => sum + value, 0) - existingNoVc;
+			const noVcPool = shuffle(standbyPlayers.filter(player => !player.vc), rng);
+			const vcPool = shuffle(standbyPlayers.filter(player => player.vc), rng);
+			const selectedStandby = [
+				...noVcPool.slice(0, selectedNoVcCount),
+				...vcPool.slice(0, standbySlots - selectedNoVcCount)
+			];
+			const candidateTeams = buildTeamsForNoVcTargets(
+				[...existingPlayers, ...selectedStandby],
+				targetSizes,
+				targetNoVc,
+				rng
+			);
+			const score = improveInitialCandidate(candidateTeams, vcSpreadLimit, rng);
+			keepCandidate(candidates, {
+				teams: candidateTeams,
+				score,
+				selectedPlayerIds: selectedStandby.map(player => player.id)
+			}, true);
+		}
+		const chosen = chooseCandidate(candidates, rng);
+		return {
+			teams: chosen.teams.map(team => ({ ...team, members: [...team.members] })),
+			selectedPlayerIds: [...chosen.selectedPlayerIds],
+			score: { ...chosen.score },
+			vcSpreadLimit,
+			candidateCount: candidates.length
+		};
+	}
+
+	function fillVacancies(teams, standbyPlayers, options) {
+		const settings = options || {};
+		const rng = settings.rng || Math.random;
+		const restarts = settings.restarts == null ? DEFAULT_RESTARTS : settings.restarts;
+		if (!Array.isArray(teams) || teams.length < 2 || teams.some(team => !team || !Array.isArray(team.members))) {
+			throw new Error('チーム分け結果が不正です。');
+		}
+		const existingPlayers = teams.flatMap(team => team.members);
+		const existingIds = validatePlayers(existingPlayers, '既存チーム');
+		const standbyIds = validatePlayers(standbyPlayers, '途中参加リスト');
+		for (const id of standbyIds) {
+			if (existingIds.has(id)) throw new Error('既存チームと途中参加リストに同じプレイヤーがいます。');
+		}
+		if (!Number.isInteger(restarts) || restarts < 1) throw new Error('探索回数が不正です。');
+
+		const baseTeams = teams.map(team => {
+			const vacancies = team.vacancies || 0;
+			if (!Number.isInteger(vacancies) || vacancies < 0 || team.members.length + vacancies > 5) {
+				throw new Error('チームの空き枠が不正です。');
+			}
+			return { members: [...team.members], vacancies };
+		});
+		const totalVacancies = baseTeams.reduce((sum, team) => sum + team.vacancies, 0);
+		if (totalVacancies === 0) throw new Error('退出したプレイヤーがいないため、調整の必要はありません。');
+		if (standbyPlayers.length < totalVacancies) {
+			throw new Error(`途中参加プレイヤーが不足しています。あと${totalVacancies - standbyPlayers.length}人必要です。`);
+		}
+
+		const requestedFixed = settings.fixedTeamIndexes == null
+			? baseTeams.map((_, index) => index)
+			: settings.fixedTeamIndexes;
+		if (!Array.isArray(requestedFixed)
+			|| requestedFixed.some(index => !Number.isInteger(index) || index < 0 || index >= baseTeams.length)
+			|| new Set(requestedFixed).size !== requestedFixed.length) {
+			throw new Error('固定チームの指定が不正です。');
+		}
+		const fixedSet = new Set(requestedFixed);
+		const fixedIndexes = baseTeams.map((_, index) => index).filter(index => fixedSet.has(index));
+		const flexibleIndexes = baseTeams.map((_, index) => index).filter(index => !fixedSet.has(index));
+		const outputTeams = Array(baseTeams.length);
+		const selectedPlayerIds = [];
+		let candidateCount = 0;
+		let vcSpreadLimit = 0;
+
+		let remainingStandby = [...standbyPlayers];
+		if (fixedIndexes.length > 0) {
+			const result = fillFixedVacancies(fixedIndexes.map(index => baseTeams[index]), remainingStandby, rng, restarts);
+			fixedIndexes.forEach((index, offset) => { outputTeams[index] = result.teams[offset]; });
+			selectedPlayerIds.push(...result.selectedPlayerIds);
+			const selected = new Set(result.selectedPlayerIds);
+			remainingStandby = remainingStandby.filter(player => !selected.has(player.id));
+			candidateCount += result.candidateCount;
+			vcSpreadLimit = Math.max(vcSpreadLimit, result.vcSpreadLimit);
+		}
+		if (flexibleIndexes.length > 0) {
+			const result = rebalanceFlexibleTeams(flexibleIndexes.map(index => baseTeams[index]), remainingStandby, rng, restarts);
+			flexibleIndexes.forEach((index, offset) => { outputTeams[index] = result.teams[offset]; });
+			selectedPlayerIds.push(...result.selectedPlayerIds);
+			candidateCount += result.candidateCount;
+			vcSpreadLimit = Math.max(vcSpreadLimit, result.vcSpreadLimit);
+		}
+
+		return {
+			teams: outputTeams,
+			selectedPlayerIds,
+			score: evaluateTeams(outputTeams),
+			vcSpreadLimit,
+			candidateCount
 		};
 	}
 

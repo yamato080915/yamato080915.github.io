@@ -51,6 +51,7 @@
 		$('shuffle-btn').disabled = unavailable || pending || !pointsReady || (!s.lastTeams && !s.players.length);
 		$('reset-teams-btn').disabled = unavailable || pending || !s?.lastTeams;
 		app.querySelectorAll('[data-remove-id]').forEach(button => { button.disabled = unavailable || pending; });
+		app.querySelectorAll('[data-team-fixed-index]').forEach(checkbox => { checkbox.disabled = unavailable || syncing || pending; });
 	}
 	function render() {
 		const s = manager?.state;
@@ -86,7 +87,24 @@
 				const panel = element('div', 'panel');
 				const header = element('div', 'panel-header shuffle-heading');
 				header.append(element('span', '', 'チーム ' + (index + 1)));
-				header.append(element('span', 'badge badge-neutral', team.totalPoints + ' pts ／ VCなし ' + team.members.filter(p => !p.vc).length + '人'));
+				const teamControls = element('div', 'shuffle-team-controls');
+				const fixedLabel = element('label', 'shuffle-team-fixed');
+				const fixedCheckbox = element('input');
+				fixedCheckbox.type = 'checkbox';
+				fixedCheckbox.checked = team.fixed !== false;
+				fixedCheckbox.dataset.teamFixedIndex = String(index);
+				fixedCheckbox.setAttribute('aria-label', 'チーム ' + (index + 1) + 'のメンバーを固定');
+				fixedCheckbox.addEventListener('change', () => {
+					const fixed = fixedCheckbox.checked;
+					renderKey = '';
+					perform(() => manager.setTeamFixed(index, fixed), '固定状態を保存しています…');
+				});
+				fixedLabel.append(fixedCheckbox, element('span', '', 'メンバー固定'));
+				teamControls.append(
+					fixedLabel,
+					element('span', 'badge badge-neutral', team.totalPoints + ' pts ／ VCなし ' + team.members.filter(p => !p.vc).length + '人')
+				);
+				header.append(teamControls);
 				const members = element('ul', 'list');
 				members.append(...team.members.map(p => person(p, true)));
 				if (team.vacancies) members.append(element('li', 'shuffle-empty', '空き枠: ' + team.vacancies + '人'));

@@ -45,7 +45,8 @@
 		const members = [];
 		for (const team of teams) {
 			if (!team || !Array.isArray(team.members) || !Number.isInteger(team.vacancies) || team.vacancies < 0
-				|| team.members.length + team.vacancies > 5 || !Number.isFinite(team.totalPoints)) return false;
+				|| team.members.length + team.vacancies > 5 || !Number.isFinite(team.totalPoints)
+				|| (team.fixed !== undefined && typeof team.fixed !== 'boolean')) return false;
 			for (const member of team.members) {
 				if (!validPlayer(member) || !Number.isFinite(member.point) || !playerIds.has(member.id)) return false;
 				members.push(member.id);
@@ -68,6 +69,16 @@
 				|| !validTeams(p.teams, new Set(ids))) return false;
 		}
 		return true;
+	}
+	function normalizeFixedTeams(teams) {
+		if (!Array.isArray(teams)) return;
+		for (const team of teams) {
+			if (team.fixed === undefined) team.fixed = true;
+		}
+	}
+	function normalizeFixedState(state) {
+		normalizeFixedTeams(state.lastTeams);
+		normalizeFixedTeams(state.pending?.teams);
 	}
 	class ApiError extends Error {
 		constructor(message, status = 0, code = 'network_error') { super(message); this.status = status; this.code = code; }
@@ -182,6 +193,7 @@
 			if (!active) { this.state = null; return; }
 			const saved = this.read(PREFIX + active);
 			if (!isId(active) || !validateState(saved) || saved.room.id !== active) throw new Error('募集の保存データが不正です。データを保護するため自動作成を停止しました。');
+			normalizeFixedState(saved);
 			this.state = saved;
 		}
 		save() { this.write(PREFIX + this.state.room.id, this.state); }
@@ -313,6 +325,16 @@
 				this.state.teamCount = count; this.save();
 			});
 		}
+		setTeamFixed(index, fixed) {
+			return this.run(() => {
+				if (!this.state.lastTeams || this.state.pending) throw new Error('現在はチームの固定状態を変更できません。');
+				if (!Number.isInteger(index) || index < 0 || index >= this.state.lastTeams.length || typeof fixed !== 'boolean') {
+					throw new Error('固定チームの指定が不正です。');
+				}
+				this.state.lastTeams[index].fixed = fixed;
+				this.save();
+			});
+		}
 		async commit(teams, activeIds) {
 			const participantIds = teams === null ? [] : teams.flatMap(t => t.members.map(p => p.id));
 			this.state.pending = { teams: clone(teams), activeIds, request: { operationId: this.uuid(), expectedRevision: this.state.room.revision, participantIds } };
@@ -334,11 +356,19 @@
 						if (reset) {
 							teams = null; activeIds = [...s.players, ...s.standbyPlayers].map(p => p.id);
 						} else if (s.lastTeams) {
-							const result = this.balancer.fillVacancies(s.lastTeams, s.standbyPlayers.map(p => ({ ...p, point: this.point(p) })));
-							teams = result.teams; activeIds = [...s.players.map(p => p.id), ...result.selectedPlayerIds];
+							const fixedTeamIndexes = s.lastTeams
+								.map((team, index) => team.fixed !== false ? index : -1)
+								.filter(index => index !== -1);
+							const result = this.balancer.fillVacancies(
+								s.lastTeams,
+								s.standbyPlayers.map(p => ({ ...p, point: this.point(p) })),
+								{ fixedTeamIndexes }
+							);
+							teams = result.teams.map((team, index) => ({ ...team, fixed: s.lastTeams[index].fixed !== false }));
+							activeIds = [...s.players.map(p => p.id), ...result.selectedPlayerIds];
 						} else {
 							const result = this.balancer.balanceInitial(s.players.map(p => ({ ...p, point: this.point(p) })), s.teamCount);
-							teams = result.teams; activeIds = s.players.map(p => p.id);
+							teams = result.teams.map(team => ({ ...team, fixed: true })); activeIds = s.players.map(p => p.id);
 						}
 					} catch (error) {
 						// 人数不足などが古い一覧によるものなら、取得して一度再計算する。
