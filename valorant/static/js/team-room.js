@@ -54,6 +54,24 @@
 		return validateRegistration(p) && validVerifiedIdentity(p) && isId(p.id)
 			&& typeof p.editLocked === 'boolean' && Number.isInteger(p.version) && p.version >= 1;
 	}
+	function validDirectoryPlayer(p) {
+		return validateRegistration(p) && isId(p.id) && (p.riotId === null || validRiotId(p.riotId));
+	}
+	function validDirectoryTeams(teams, players) {
+		if (teams === null) return true;
+		if (!Array.isArray(teams) || teams.length < 2 || teams.length > 100) return false;
+		const memberIds = [];
+		for (const team of teams) {
+			if (!team || !Array.isArray(team.members) || !Number.isInteger(team.vacancies) || team.vacancies < 0
+				|| team.members.length + team.vacancies < 1 || team.members.length + team.vacancies > 5
+				|| !team.members.every(validDirectoryPlayer)) return false;
+			for (const member of team.members) {
+				if (!players.has(member.id)) return false;
+				memberIds.push(member.id);
+			}
+		}
+		return memberIds.length === new Set(memberIds).size;
+	}
 	function validRoom(room) {
 		return room && isId(room.id) && ['open', 'closed', 'expired'].includes(room.status)
 			&& Number.isFinite(Date.parse(room.expiresAt)) && Number.isInteger(room.revision) && room.revision >= 0
@@ -68,13 +86,26 @@
 		return value;
 	}
 	function validateRegistrationSnapshot(value, roomId) {
+		const directory = Array.isArray(value?.participants) ? value.participants : null;
+		const playerIds = new Set(directory?.map(player => player.id));
 		if (!value?.room || value.room.id !== roomId || !['open', 'closed', 'expired'].includes(value.room.status)
 			|| !Number.isFinite(Date.parse(value.room.expiresAt)) || !RANK_MODES.includes(value.room.rankMode)
 			|| typeof value.editable !== 'boolean'
-			|| (value.participant !== null && !validPlayer(value.participant))) {
+			|| (value.participant !== null && !validPlayer(value.participant))
+			|| directory === null || !directory.every(validDirectoryPlayer)
+			|| playerIds.size !== directory.length || !validDirectoryTeams(value.teams, playerIds)
+			|| (value.participant === null && (directory.length !== 0 || value.teams !== null))
+			|| (value.participant !== null && !playerIds.has(value.participant.id))) {
 			throw new Error('登録情報の応答が不正です。');
 		}
 		return value;
+	}
+	function teamResultPayload(teams) {
+		if (teams === null) return null;
+		return teams.map(team => ({
+			memberIds: team.members.map(member => member.id),
+			capacity: team.members.length + team.vacancies
+		}));
 	}
 	function validateRankVerification(value, roomId) {
 		const validVerificationId = isId(value?.verificationId) || (value?.saved === true && value.verificationId === null);
@@ -115,7 +146,8 @@
 			if (!p || !isId(p.request?.operationId) || !Number.isInteger(p.request.expectedRevision)
 				|| !Array.isArray(p.activeIds) || !p.activeIds.every(id => ids.includes(id))
 				|| !Array.isArray(p.request.participantIds) || !p.request.participantIds.every(id => ids.includes(id))
-				|| !validTeams(p.teams, new Set(ids))) return false;
+				|| !validTeams(p.teams, new Set(ids))
+				|| JSON.stringify(p.request.teams) !== JSON.stringify(teamResultPayload(p.teams))) return false;
 		}
 		return true;
 	}
@@ -141,6 +173,11 @@
 		if (Array.isArray(state.lastTeams)) collections.push(...state.lastTeams.map(team => team.members));
 		if (Array.isArray(state.pending?.teams)) collections.push(...state.pending.teams.map(team => team.members));
 		for (const players of collections) if (Array.isArray(players)) players.forEach(normalizePlayerIdentity);
+	}
+	function normalizePendingResult(state) {
+		if (state?.pending?.request && state.pending.request.teams === undefined) {
+			state.pending.request.teams = teamResultPayload(state.pending.teams);
+		}
 	}
 	class ApiError extends Error {
 		constructor(message, status = 0, code = 'network_error') { super(message); this.status = status; this.code = code; }
@@ -181,12 +218,13 @@
 			}
 		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/edit-locks$/)) && verb === 'PUT') return {
-			name: 'team_shuffle_set_edit_locks',
+			name: 'team_shuffle_commit_result',
 			body: {
 				p_room_id: match[1], p_organizer_token: token ?? null,
 				p_operation_id: body?.operationId ?? null,
 				p_expected_revision: body?.expectedRevision ?? null,
-				p_participant_ids: body?.participantIds ?? null
+				p_participant_ids: body?.participantIds ?? null,
+				p_teams: body?.teams ?? null
 			}
 		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/participants\/([^/]+)$/)) && verb === 'DELETE') return {
@@ -290,6 +328,7 @@
 			const saved = this.read(PREFIX + active);
 			normalizeRankModeState(saved);
 			normalizePlayerIdentityState(saved);
+			normalizePendingResult(saved);
 			if (!isId(active) || !validateState(saved) || saved.room.id !== active) throw new Error('募集の保存データが不正です。データを保護するため自動作成を停止しました。');
 			normalizeFixedState(saved);
 			this.state = saved;
@@ -447,7 +486,10 @@
 		}
 		async commit(teams, activeIds) {
 			const participantIds = teams === null ? [] : teams.flatMap(t => t.members.map(p => p.id));
-			this.state.pending = { teams: clone(teams), activeIds, request: { operationId: this.uuid(), expectedRevision: this.state.room.revision, participantIds } };
+			this.state.pending = { teams: clone(teams), activeIds, request: {
+				operationId: this.uuid(), expectedRevision: this.state.room.revision,
+				participantIds, teams: teamResultPayload(teams)
+			} };
 			// サーバーの確定より前に、復旧に必要な候補を永続化する。
 			this.save();
 			try { this.absorb(await this.request('/edit-locks', 'PUT', this.state.pending.request)); }
@@ -495,5 +537,5 @@
 		shuffle() { return this.changeTeams(false); }
 		reset() { return this.changeTeams(true); }
 	}
-	return { API_BASE, ACTIVE_KEY, CREATION_KEY, PREFIX, TIERS, RANK_MODES, isId, isToken, randomToken, validateRegistration, validateRegistrationInput, validateRankVerification, validateRegistrationSnapshot, validateSnapshot, validateState, ApiError, Api, RoomManager };
+	return { API_BASE, ACTIVE_KEY, CREATION_KEY, PREFIX, TIERS, RANK_MODES, isId, isToken, randomToken, validateRegistration, validateRegistrationInput, validateRankVerification, validateRegistrationSnapshot, validateSnapshot, validateState, teamResultPayload, ApiError, Api, RoomManager };
 });

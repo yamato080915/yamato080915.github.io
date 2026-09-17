@@ -5,10 +5,13 @@ css:
   - /valorant/static/css/team-shuffle.css
 ---
 
-<div class="shuffle-register shuffle-stack">
+<div id="registration-app" class="shuffle-register shuffle-stack" data-points-url="{{ '/valorant/team-shuffle/points.json' | relative_url }}">
 	<h1 class="page-title text-center">チーム分けへの参加登録</h1>
-	<section class="panel">
-		<div class="panel-header">参加者情報</div>
+	<details id="registration-editor" class="panel shuffle-register-form-panel shuffle-register-editor" data-collapsible="false" open>
+		<summary id="registration-editor-summary" class="panel-header shuffle-register-summary" aria-disabled="true">
+			<span id="registration-editor-title">参加者情報</span>
+			<span id="registration-editor-action" class="badge badge-neutral">入力してください</span>
+		</summary>
 		<div class="panel-body">
 			<p id="registration-room" class="field-help shuffle-block">募集を確認しています。</p>
 			<form id="registration-form">
@@ -32,6 +35,21 @@ css:
 			<p id="registration-status" class="field-help shuffle-status" role="status" aria-live="polite"></p>
 			<button id="registration-retry" class="button button-secondary shuffle-help" type="button" hidden>再確認する</button>
 			<p class="field-help shuffle-help">同じブラウザから登録情報を修正できます。チームに入った後は修正できません。途中参加で補充待ちの間は修正可能です。</p>
+		</div>
+	</details>
+	<section id="participant-directory-panel" class="panel" hidden>
+		<div class="panel-header shuffle-heading">
+			<span>参加者一覧</span>
+			<span class="badge badge-neutral"><span id="participant-directory-count">0</span>人</span>
+		</div>
+		<div class="panel-body">
+			<ul id="participant-directory" class="list shuffle-list"></ul>
+		</div>
+	</section>
+	<section id="participant-result-panel" class="panel" hidden>
+		<div class="panel-header">チーム分け結果</div>
+		<div class="panel-body">
+			<div id="participant-result" class="shuffle-results"></div>
 		</div>
 	</section>
 	<noscript>参加登録にはJavaScriptを有効にしてください。</noscript>

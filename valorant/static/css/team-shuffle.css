@@ -28,7 +28,13 @@
 .shuffle-person-badges { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
 .shuffle-person button { flex-shrink: 0; }
 .shuffle-empty { padding: 1.25rem; color: #64748b; font-size: .875rem; }
-.shuffle-register { max-width: 34rem; margin-inline: auto; }
+.shuffle-register { max-width: 72rem; margin-inline: auto; }
+.shuffle-register-form-panel { width: 100%; max-width: 34rem; margin-inline: auto; }
+.shuffle-register-summary { display: flex; align-items: center; justify-content: space-between; gap: .75rem; cursor: pointer; list-style: none; }
+.shuffle-register-summary::-webkit-details-marker { display: none; }
+.shuffle-register-editor[data-collapsible="false"] > .shuffle-register-summary { cursor: default; }
+.shuffle-register-editor[data-collapsible="false"] > .shuffle-register-summary .badge { opacity: .7; }
+.shuffle-viewer-person { align-items: flex-start; }
 .shuffle-fields { display: grid; gap: 1rem; padding: 0; border: 0; min-width: 0; }
 .shuffle-check { display: flex; align-items: center; gap: .75rem; }
 .shuffle-check input { flex: 0 0 auto; }
@@ -48,4 +54,6 @@
 }
 @media (max-width: 480px) {
 	.shuffle-team-controls { width: 100%; justify-content: space-between; }
+	.shuffle-register-summary { align-items: flex-start; }
+	.shuffle-register-summary .badge { flex: 0 1 auto; text-align: center; white-space: normal; }
 }
