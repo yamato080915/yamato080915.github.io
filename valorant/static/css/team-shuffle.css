@@ -35,6 +35,21 @@
 .shuffle-register-editor[data-collapsible="false"] > .shuffle-register-summary { cursor: default; }
 .shuffle-register-editor[data-collapsible="false"] > .shuffle-register-summary .badge { opacity: .7; }
 .shuffle-viewer-person { align-items: flex-start; }
+.shuffle-map-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.shuffle-map-option { position: relative; min-height: 4.4rem; overflow: hidden; border: 2px solid #cbd5e1; border-radius: .6rem; color: #fff; background-position: center; background-size: cover; text-shadow: 0 1px 3px #000; font-weight: 700; text-transform: capitalize; }
+.shuffle-map-option::before { content: ''; position: absolute; inset: 0; background: rgb(15 23 42 / .52); }
+.shuffle-map-option > span { position: relative; z-index: 1; }
+.shuffle-map-option:hover:not(:disabled) { border-color: #60a5fa; }
+.shuffle-map-option[aria-pressed="true"] { border-color: #22c55e; box-shadow: 0 0 0 2px rgb(34 197 94 / .3); }
+.shuffle-map-option[aria-pressed="true"]::before { background: rgb(21 128 61 / .5); }
+.shuffle-map-option:disabled { cursor: not-allowed; opacity: .65; }
+.shuffle-map-roulette { display: grid; justify-items: center; gap: 1rem; padding-top: .5rem; text-align: center; }
+.shuffle-map-slot-window { position: relative; width: min(100%, 18rem); height: 5rem; overflow: hidden; border: 2px solid #334155; border-radius: .6rem; background: #fff; }
+.shuffle-map-slot-window::before, .shuffle-map-slot-window::after { content: ''; position: absolute; z-index: 2; right: 0; left: 0; height: 1.4rem; pointer-events: none; }
+.shuffle-map-slot-window::before { top: 0; background: linear-gradient(#fff, transparent); }
+.shuffle-map-slot-window::after { bottom: 0; background: linear-gradient(transparent, #fff); }
+.shuffle-map-slot-strip { display: flex; flex-direction: column; }
+.shuffle-map-slot-item { display: flex; flex: 0 0 5rem; align-items: center; justify-content: center; color: #fff; background-position: center; background-size: cover; font-family: "Squada One", sans-serif; font-size: 2rem; letter-spacing: .05em; text-shadow: 0 1px 4px #000; text-transform: capitalize; }
 .shuffle-fields { display: grid; gap: 1rem; padding: 0; border: 0; min-width: 0; }
 .shuffle-check { display: flex; align-items: center; gap: .75rem; }
 .shuffle-check input { flex: 0 0 auto; }

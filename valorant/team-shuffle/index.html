@@ -66,6 +66,18 @@ css:
 		<h2 class="section-title shuffle-block">結果</h2>
 		<div id="result" class="shuffle-results"></div>
 	</section>
+	<section id="map-decision-panel" class="panel" hidden>
+		<div class="panel-header shuffle-heading"><span>希望マップとルーレット</span><span id="map-selection-state" class="badge badge-neutral">未選択</span></div>
+		<div class="panel-body shuffle-stack">
+			<p id="map-selection-help" class="field-help">各チームの希望マップを待っています。</p>
+			<ul id="team-map-preference-list" class="list"></ul>
+			<div class="shuffle-actions"><button id="map-decision-btn" type="button" class="button button-primary" disabled>マップを決定</button><button id="map-decision-reset-btn" type="button" class="button button-secondary" disabled>決定マップをリセット</button></div>
+			<div id="map-roulette-result" class="shuffle-map-roulette" hidden>
+				<div class="shuffle-map-slot-window"><div id="map-roulette-strip" class="shuffle-map-slot-strip"><div class="shuffle-map-slot-item">?</div></div></div>
+				<p id="map-roulette-message" class="field-help">全チームの希望がそろうと抽選できます。</p>
+			</div>
+		</div>
+	</section>
 	<a href="{{ '/valorant/' | relative_url }}" class="text-sm font-semibold text-brand-700 hover:underline">ほかのサービスを見る</a>
 	<noscript>チーム分けにはJavaScriptを有効にしてください。</noscript>
 </div>

@@ -14,6 +14,7 @@
 	const CREATION_KEY = PREFIX + 'creation';
 	const TIERS = ['unranked', 'iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ascendant', 'immortal', 'radiant'];
 	const RANK_MODES = ['peak', 'current'];
+	const MAPS = ['abyss', 'ascent', 'bind', 'breeze', 'corrode', 'fracture', 'haven', 'icebox', 'lotus', 'pearl', 'split', 'summit', 'sunset'];
 	const RIOT_ID_MAX = 64;
 	const isId = value => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 	const isToken = value => typeof value === 'string' && /^[0-9a-f]{64}$/.test(value);
@@ -73,10 +74,15 @@
 		return memberIds.length === new Set(memberIds).size;
 	}
 	function validRoom(room) {
+		const mapSelection = room?.mapSelection;
 		return room && isId(room.id) && ['open', 'closed', 'expired'].includes(room.status)
 			&& Number.isFinite(Date.parse(room.expiresAt)) && Number.isInteger(room.revision) && room.revision >= 0
 			&& (room.lastOperationId === null || isId(room.lastOperationId))
-			&& RANK_MODES.includes(room.rankMode) && typeof room.rankModeEditable === 'boolean';
+			&& RANK_MODES.includes(room.rankMode) && typeof room.rankModeEditable === 'boolean'
+			&& mapSelection && (mapSelection.preferences === null || (Array.isArray(mapSelection.preferences)
+				&& mapSelection.preferences.every(value => value === null || MAPS.includes(value))))
+			&& (mapSelection.selectedMap === null || MAPS.includes(mapSelection.selectedMap))
+			&& typeof mapSelection.allTeamsSelected === 'boolean';
 	}
 	function validateSnapshot(value) {
 		if (!value || !validRoom(value.room) || !Array.isArray(value.participants) || !value.participants.every(validPlayer)
@@ -90,6 +96,10 @@
 		const playerIds = new Set(directory?.map(player => player.id));
 		if (!value?.room || value.room.id !== roomId || !['open', 'closed', 'expired'].includes(value.room.status)
 			|| !Number.isFinite(Date.parse(value.room.expiresAt)) || !RANK_MODES.includes(value.room.rankMode)
+			|| !value.room.mapSelection || (value.room.mapSelection.preferences !== null && (!Array.isArray(value.room.mapSelection.preferences)
+				|| !value.room.mapSelection.preferences.every(map => map === null || MAPS.includes(map))))
+			|| (value.room.mapSelection.selectedMap !== null && !MAPS.includes(value.room.mapSelection.selectedMap))
+			|| typeof value.room.mapSelection.allTeamsSelected !== 'boolean'
 			|| typeof value.editable !== 'boolean'
 			|| (value.participant !== null && !validPlayer(value.participant))
 			|| directory === null || !directory.every(validDirectoryPlayer)
@@ -167,6 +177,10 @@
 		// 旧保存データでは一度でも登録があったか判別できないため、取得完了までは安全側で固定する。
 		if (state.room.rankModeEditable === undefined) state.room.rankModeEditable = false;
 	}
+	function normalizeMapSelectionState(state) {
+		if (!state?.room) return;
+		if (state.room.mapSelection === undefined) state.room.mapSelection = { preferences: null, selectedMap: null, allTeamsSelected: false };
+	}
 	function normalizePlayerIdentityState(state) {
 		if (!state) return;
 		const collections = [state.players, state.standbyPlayers];
@@ -217,6 +231,21 @@
 				p_consent: body?.consent ?? null
 			}
 		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/team-map-preference$/)) && verb === 'PUT') return {
+			name: 'team_shuffle_set_team_map_preference',
+			body: { p_room_id: match[1], p_participant_token: token ?? null, p_map: body?.map ?? null }
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/map-decision$/)) && verb === 'POST') return {
+			name: 'team_shuffle_decide_map',
+			body: {
+				p_room_id: match[1], p_organizer_token: token ?? null,
+				p_operation_id: body?.operationId ?? null, p_expected_revision: body?.expectedRevision ?? null
+			}
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/map-decision\/reset$/)) && verb === 'POST') return {
+			name: 'team_shuffle_reset_map_decision',
+			body: { p_room_id: match[1], p_organizer_token: token ?? null }
+		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/edit-locks$/)) && verb === 'PUT') return {
 			name: 'team_shuffle_commit_result',
 			body: {
@@ -266,7 +295,7 @@
 				let data;
 				try { data = await res.json(); } catch (_) { throw new ApiError('APIから正しい応答がありません。時間をおいて再試行してください。', res.status); }
 				if (!res.ok) {
-					const appCodes = new Set(['invalid_request', 'unauthorized', 'forbidden', 'not_found', 'closed', 'expired', 'locked', 'rank_mode_locked', 'revision_conflict', 'consent_required', 'invalid_riot_id', 'duplicate_riot_id', 'verification_required', 'verification_expired']);
+			const appCodes = new Set(['invalid_request', 'unauthorized', 'forbidden', 'not_found', 'closed', 'expired', 'locked', 'rank_mode_locked', 'revision_conflict', 'consent_required', 'invalid_riot_id', 'duplicate_riot_id', 'verification_required', 'verification_expired', 'team_result_required', 'not_team_member', 'map_decided', 'map_preferences_incomplete']);
 					const code = appCodes.has(data?.details) ? data.details : (data?.code || 'request_failed');
 					throw new ApiError(data?.message || '処理を完了できませんでした。', res.status, code);
 				}
@@ -327,6 +356,7 @@
 			if (!active) { this.state = null; return; }
 			const saved = this.read(PREFIX + active);
 			normalizeRankModeState(saved);
+			normalizeMapSelectionState(saved);
 			normalizePlayerIdentityState(saved);
 			normalizePendingResult(saved);
 			if (!isId(active) || !validateState(saved) || saved.room.id !== active) throw new Error('募集の保存データが不正です。データを保護するため自動作成を停止しました。');
@@ -484,6 +514,19 @@
 				this.save();
 			});
 		}
+		decideMap() {
+			return this.run(async () => {
+				const selection = this.state.room.mapSelection;
+				if (!this.state.lastTeams || selection.selectedMap || !selection.allTeamsSelected) throw new Error('全チームの希望マップがそろっていません。');
+				this.absorb(await this.request('/map-decision', 'POST', { operationId: this.uuid(), expectedRevision: this.state.room.revision }));
+			});
+		}
+		resetMapDecision() {
+			return this.run(async () => {
+				if (!this.state.room.mapSelection.selectedMap) throw new Error('決定済みのマップがありません。');
+				this.absorb(await this.request('/map-decision/reset', 'POST'));
+			});
+		}
 		async commit(teams, activeIds) {
 			const participantIds = teams === null ? [] : teams.flatMap(t => t.members.map(p => p.id));
 			this.state.pending = { teams: clone(teams), activeIds, request: {
@@ -537,5 +580,5 @@
 		shuffle() { return this.changeTeams(false); }
 		reset() { return this.changeTeams(true); }
 	}
-	return { API_BASE, ACTIVE_KEY, CREATION_KEY, PREFIX, TIERS, RANK_MODES, isId, isToken, randomToken, validateRegistration, validateRegistrationInput, validateRankVerification, validateRegistrationSnapshot, validateSnapshot, validateState, teamResultPayload, ApiError, Api, RoomManager };
+	return { API_BASE, ACTIVE_KEY, CREATION_KEY, PREFIX, TIERS, RANK_MODES, MAPS, isId, isToken, randomToken, validateRegistration, validateRegistrationInput, validateRankVerification, validateRegistrationSnapshot, validateSnapshot, validateState, teamResultPayload, ApiError, Api, RoomManager };
 });

@@ -2,7 +2,7 @@
 	'use strict';
 	const $ = id => document.getElementById(id);
 	const app = $('team-shuffle-app');
-	let manager, busy = false, syncing = false, timer, halted = false, pointsReady = false, renderKey = '', replacingExpired = false;
+	let manager, busy = false, syncing = false, timer, halted = false, pointsReady = false, renderKey = '', replacingExpired = false, revealMapPreferences = false;
 	const labels = { open: '受付中', closed: '募集終了', expired: '期限切れ' };
 	function status(message, error = false) {
 		$('sync-status').textContent = message;
@@ -41,6 +41,47 @@
 		const node = $(id); node.replaceChildren(...players.map(p => person(p)));
 		if (!players.length) node.append(element('li', 'shuffle-empty', empty));
 	}
+	function mapImage(map) { return `linear-gradient(rgb(15 23 42 / .45), rgb(15 23 42 / .45)), url('/valorant/static/pictures/${map}.png')`; }
+	function renderMapDecision(s) {
+		const panel = $('map-decision-panel'), listNode = $('team-map-preference-list'), selection = s.room.mapSelection;
+		listNode.replaceChildren();
+		if (!s.lastTeams) { panel.hidden = true; return; }
+		panel.hidden = false;
+		const preferences = selection.preferences || [];
+		if (!selection.selectedMap && !selection.allTeamsSelected) revealMapPreferences = false;
+		const reveal = revealMapPreferences || Boolean(selection.selectedMap);
+		s.lastTeams.forEach((team, index) => {
+			const map = preferences[index] || null;
+			const row = element('li', 'list-item shuffle-person');
+			row.append(element('strong', '', `チーム ${index + 1}`));
+			row.append(element('span', `badge ${map ? 'badge-success' : 'badge-neutral'}`, reveal && map ? map : (map ? '選択済み' : '未選択')));
+			listNode.append(row);
+		});
+		const total = s.lastTeams.length, selected = preferences.filter(Boolean).length;
+		$('map-selection-state').textContent = selection.selectedMap ? '決定済み' : `${selected}/${total} チーム選択済み`;
+		$('map-selection-help').textContent = selection.selectedMap
+			? `決定マップ: ${selection.selectedMap}`
+			: reveal ? '各チームの希望マップを候補としてルーレットを実行します。' : selection.allTeamsSelected ? '全チームの希望がそろいました。抽選できます。' : '全チームの希望マップを待っています。';
+		const roulette = $('map-roulette-result'); roulette.hidden = !selection.selectedMap;
+		if (selection.selectedMap) {
+			$('map-roulette-strip').replaceChildren(mapSlot(selection.selectedMap));
+			$('map-roulette-message').textContent = `決定マップ: ${selection.selectedMap}`;
+		}
+	}
+	function mapSlot(map) {
+		const item = element('div', 'shuffle-map-slot-item', map); item.style.backgroundImage = mapImage(map); return item;
+	}
+	function spinMap(candidates, selected) {
+		const strip = $('map-roulette-strip'), roulette = $('map-roulette-result');
+		roulette.hidden = false; $('map-roulette-message').textContent = '抽選中…';
+		const reel = Array.from({ length: 23 }, () => candidates[Math.floor(Math.random() * candidates.length)]); reel.push(selected);
+		strip.style.transition = 'none'; strip.style.transform = 'translateY(0)'; strip.replaceChildren(...reel.map(mapSlot));
+		void strip.offsetHeight;
+		return new Promise(resolve => {
+			strip.style.transition = 'transform 2.4s cubic-bezier(.15,.85,.25,1)'; strip.style.transform = `translateY(${-80 * (reel.length - 1)}px)`;
+			strip.addEventListener('transitionend', () => { $('map-roulette-message').textContent = `決定マップ: ${selected}`; resolve(); }, { once: true });
+		});
+	}
 	function controls() {
 		const s = manager?.state;
 		const unavailable = busy || !s || halted || replacingExpired;
@@ -53,6 +94,8 @@
 		$('team-count').disabled = unavailable || pending || Boolean(s?.lastTeams);
 		$('shuffle-btn').disabled = unavailable || pending || !pointsReady || (!s.lastTeams && !s.players.length);
 		$('reset-teams-btn').disabled = unavailable || pending || !s?.lastTeams;
+		$('map-decision-btn').disabled = unavailable || pending || !s?.lastTeams || !s.room.mapSelection.allTeamsSelected || Boolean(s.room.mapSelection.selectedMap);
+		$('map-decision-reset-btn').disabled = unavailable || pending || !s?.room.mapSelection.selectedMap;
 		app.querySelectorAll('[data-remove-id]').forEach(button => { button.disabled = unavailable || pending; });
 		app.querySelectorAll('[data-team-fixed-index]').forEach(checkbox => { checkbox.disabled = unavailable || syncing || pending; });
 	}
@@ -68,7 +111,7 @@
 			$('standby-player-count').textContent = '0';
 			list('player-list', [], '新しい募集を準備しています。');
 			list('standby-player-list', [], '補充待ちの参加者はいません。');
-			$('result').replaceChildren(); renderKey = '';
+			$('result').replaceChildren(); $('map-decision-panel').hidden = true; renderKey = '';
 			controls(); return;
 		}
 		$('room-id').textContent = s.room.id;
@@ -79,7 +122,7 @@
 		url.searchParams.set('id', s.room.id);
 		$('registration-url').value = url.href;
 		if (document.activeElement !== $('team-count')) $('team-count').value = s.teamCount;
-		const key = JSON.stringify([pointsReady, s.room.id, s.room.status, s.players, s.standbyPlayers, s.lastTeams]);
+		const key = JSON.stringify([pointsReady, s.room.id, s.room.status, s.players, s.standbyPlayers, s.lastTeams, s.room.mapSelection]);
 		if (renderKey !== key) {
 			renderKey = key;
 			$('player-count').textContent = s.players.length;
@@ -114,19 +157,20 @@
 				if (team.vacancies) members.append(element('li', 'shuffle-empty', '空き枠: ' + team.vacancies + '人'));
 				panel.append(header, members); $('result').append(panel);
 			});
+			renderMapDecision(s);
 		}
 		controls();
 	}
 	function schedule() {
 		clearTimeout(timer);
-		if (!document.hidden && !busy && !halted && (replacingExpired || !manager?.state || manager.state.pending || manager.state.room.status === 'open')) {
+		if (!document.hidden && !busy && !halted) {
 			timer = setTimeout(refresh, 5000);
 		}
 	}
 	function synchronized() {
 		const s = manager.state;
 		if (!pointsReady) status('ランクポイントを取得できないためチーム分けを停止しています。ページを再読み込みしてください。', true);
-		else status(s?.room.status === 'open' ? '最終取得: ' + new Date().toLocaleTimeString('ja-JP') + ' ／ 5秒ごとに更新しています。' : '受付は終了しています。一覧・結果を保持し、チーム分けや補充を続けられます。');
+		else status(s?.room.status === 'open' ? '最終取得: ' + new Date().toLocaleTimeString('ja-JP') + ' ／ 5秒ごとに更新しています。' : '受付は終了しています。希望マップと結果を5秒ごとに更新し、チーム分けや補充を続けられます。');
 	}
 	function failed(error) {
 		status(error.message + (manager?.state?.pending ? '\n確定結果を確認中です。再取得で復旧します。' : ''), true);
@@ -179,6 +223,18 @@
 	$('shuffle-btn').addEventListener('click', () => perform(() => manager.shuffle(), 'チーム分けを確定しています…'));
 	$('reset-teams-btn').addEventListener('click', () => {
 		if (confirm('チーム分け結果をリセットしますか？\n全員を通常参加へ戻し、受付中なら情報を再び修正できるようにします。')) perform(() => manager.reset());
+	});
+	$('map-decision-btn').addEventListener('click', () => perform(async () => {
+		const candidates = manager.state.room.mapSelection.preferences.filter(Boolean);
+		revealMapPreferences = true;
+		try { await manager.decideMap(); }
+		catch (error) { revealMapPreferences = false; throw error; }
+		render();
+		await spinMap(candidates, manager.state.room.mapSelection.selectedMap);
+	}, '希望マップから抽選しています…'));
+	$('map-decision-reset-btn').addEventListener('click', () => {
+		if (!confirm('決定マップだけをリセットしますか？\n各チームの希望マップは保持され、すぐに再抽選できます。')) return;
+		perform(async () => { await manager.resetMapDecision(); revealMapPreferences = false; }, '決定マップをリセットしています…');
 	});
 	$('team-count').addEventListener('change', async () => {
 		if (busy || halted) return;

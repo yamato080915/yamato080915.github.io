@@ -7,7 +7,7 @@
 	const key = `${TeamRoom.PREFIX}registration.${id}`;
 	const modeLabels = { peak: '最高ランク', current: '現ランク' };
 	let token, timer, cooldownTimer, hydrated = false, stopped = false, canEdit = false;
-	let busyLookup = false, busySubmit = false, cooldownUntil = 0, roomRankMode = 'peak';
+	let busyLookup = false, busySubmit = false, busyMap = false, cooldownUntil = 0, roomRankMode = 'peak';
 	let participant = null, verification = null, refreshController = null, requestVersion = 0;
 	let points = null, lastSnapshot = null;
 	const editor = $('registration-editor'), editorSummary = $('registration-editor-summary');
@@ -69,8 +69,44 @@
 	function hideDirectory() {
 		$('participant-directory-panel').hidden = true;
 		$('participant-result-panel').hidden = true;
+		$('team-map-panel').hidden = true;
 		$('participant-directory').replaceChildren();
 		$('participant-result').replaceChildren();
+		$('team-map-options').replaceChildren();
+	}
+	function mapImage(map) { return `linear-gradient(rgb(15 23 42 / .42), rgb(15 23 42 / .42)), url('/valorant/static/pictures/${map}.png')`; }
+	function renderMapSelection(data) {
+		const panel = $('team-map-panel'), options = $('team-map-options');
+		options.replaceChildren();
+		if (!data.participant || !data.teams) { panel.hidden = true; return; }
+		const teamIndex = data.teams.findIndex(team => team.members.some(member => member.id === data.participant.id));
+		panel.hidden = false;
+		if (teamIndex === -1) {
+			$('team-map-message').textContent = '補充待ちのため、チーム確定後に希望マップを選択できます。';
+			return;
+		}
+		const selection = data.room.mapSelection;
+		const preference = selection.preferences?.[teamIndex] || null;
+		if (selection.selectedMap) {
+			$('team-map-message').textContent = `決定マップ: ${selection.selectedMap}`;
+			return;
+		}
+		$('team-map-message').textContent = `チーム ${teamIndex + 1} の希望マップを選択してください。チームの誰でも変更でき、最後の選択が反映されます。`;
+		for (const map of TeamRoom.MAPS) {
+			const button = element('button', 'shuffle-map-option', undefined);
+			button.type = 'button'; button.style.backgroundImage = mapImage(map); button.setAttribute('aria-pressed', String(map === preference));
+			button.disabled = busyMap; button.append(element('span', '', map));
+			button.addEventListener('click', async () => {
+				if (busyMap || map === preference) return;
+				stopRefresh(); busyMap = true; renderMapSelection(data);
+				try {
+					const snapshot = await api.request(`/rooms/${id}/team-map-preference`, { method: 'PUT', token, body: { map } });
+					render(snapshot, false); message('希望マップを保存しました。');
+				} catch (error) { message(error.message, true); }
+				finally { busyMap = false; if (lastSnapshot) renderMapSelection(lastSnapshot); schedule(); }
+			});
+			options.append(button);
+		}
 	}
 	function renderDirectory(data) {
 		if (!data.participant) { hideDirectory(); return; }
@@ -157,12 +193,13 @@
 			: canEdit ? (participant ? '登録済みです。現在は情報を修正できます。' : '情報を入力し、ランクを取得して参加登録してください。')
 				: (reason[data.reason] || '現在は情報を修正できません。'));
 		renderDirectory(data);
+		renderMapSelection(data);
 		stopped = data.reason === 'removed' || (!participant && data.room.status !== 'open');
 		$('registration-retry').hidden = true; updateEditorState(wasRegistered, firstRender, fill); reconcileVerification();
 	}
-	function schedule() { clearTimeout(timer); if (!busyLookup && !busySubmit && !stopped && !document.hidden) timer = setTimeout(refresh, 5000); }
+	function schedule() { clearTimeout(timer); if (!busyLookup && !busySubmit && !busyMap && !stopped && !document.hidden) timer = setTimeout(refresh, 5000); }
 	async function refresh(fill = false) {
-		if (busyLookup || busySubmit || refreshController || !token) return;
+		if (busyLookup || busySubmit || busyMap || refreshController || !token) return;
 		clearTimeout(timer);
 		const controller = new AbortController(), version = ++requestVersion; refreshController = controller;
 		try {
