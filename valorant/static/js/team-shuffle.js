@@ -14,15 +14,29 @@
 		if (text !== undefined) el.textContent = text;
 		return el;
 	}
+	function rankBadge(value) {
+		const badge = element('span', 'badge badge-neutral shuffle-rank-badge');
+		const label = value.tier === 'unranked' ? 'ランクなし'
+			: value.tier[0].toUpperCase() + value.tier.slice(1) + (value.tier === 'radiant' ? '' : ` ${value.div}`);
+		if (value.tier !== 'unranked') {
+			const image = element('img', 'shuffle-rank-icon');
+			const division = value.tier === 'radiant' ? '' : value.div;
+			image.src = `/valorant/static/pictures/rank-icons/${value.tier[0].toUpperCase() + value.tier.slice(1)}/${division}.png`;
+			image.alt = '';
+			image.setAttribute('aria-hidden', 'true');
+			badge.append(image);
+		}
+		badge.append(element('span', '', label));
+		return badge;
+	}
 	function person(p, inTeam = false) {
 		const row = element('li', 'list-item shuffle-person');
 		const info = element('div', 'shuffle-person-info');
 		info.append(element('strong', '', p.name));
 		const badges = element('div', 'shuffle-person-badges');
-		const tier = p.tier === 'unranked' ? 'ランクなし' : p.tier[0].toUpperCase() + p.tier.slice(1);
 		if (p.riotId) badges.append(element('span', 'badge badge-neutral', `${p.riotId.gameName}#${p.riotId.tagline}`));
 		else badges.append(element('span', 'badge badge-neutral', '旧方式登録'));
-		badges.append(element('span', 'badge badge-neutral', tier + (['radiant', 'unranked'].includes(p.tier) ? '' : ' ' + p.div)));
+		badges.append(rankBadge(p));
 		if (pointsReady) badges.append(element('span', 'badge badge-primary', manager.point(p) + ' pts'));
 		badges.append(element('span', 'badge ' + (p.vc ? 'badge-success' : 'badge-danger'), p.vc ? 'VCあり' : 'VCなし'));
 		const accepting = manager.state.room.status === 'open' && Date.parse(manager.state.room.expiresAt) > Date.now();

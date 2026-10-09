@@ -26,6 +26,8 @@
 .shuffle-person { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
 .shuffle-person-info { min-width: 0; overflow-wrap: anywhere; }
 .shuffle-person-badges { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
+.shuffle-rank-badge { display: inline-flex; align-items: center; gap: .3rem; }
+.shuffle-rank-icon { width: 1.35rem; height: 1.35rem; flex: 0 0 auto; object-fit: contain; }
 .shuffle-person button { flex-shrink: 0; }
 .shuffle-empty { padding: 1.25rem; color: #64748b; font-size: .875rem; }
 .shuffle-register { max-width: 72rem; margin-inline: auto; }

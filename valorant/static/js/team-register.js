@@ -46,6 +46,20 @@
 		if (text !== undefined) node.textContent = text;
 		return node;
 	}
+	function rankBadge(value) {
+		const badge = element('span', 'badge badge-neutral shuffle-rank-badge');
+		const label = rankLabel(value);
+		if (value.tier !== 'unranked') {
+			const image = element('img', 'shuffle-rank-icon');
+			const division = value.tier === 'radiant' ? '' : value.div;
+			image.src = `/valorant/static/pictures/rank-icons/${value.tier[0].toUpperCase() + value.tier.slice(1)}/${division}.png`;
+			image.alt = '';
+			image.setAttribute('aria-hidden', 'true');
+			badge.append(image);
+		}
+		badge.append(element('span', '', label));
+		return badge;
+	}
 	function playerPoint(player) {
 		const value = points?.[player.tier]?.[player.div - 1];
 		return Number.isFinite(value) ? value : null;
@@ -59,7 +73,7 @@
 		if (standby) badges.append(element('span', 'badge badge-neutral', '補充待ち'));
 		badges.append(element('span', 'badge badge-neutral', player.riotId
 			? `${player.riotId.gameName}#${player.riotId.tagline}` : '旧方式登録'));
-		badges.append(element('span', 'badge badge-neutral', rankLabel(player)));
+		badges.append(rankBadge(player));
 		const point = playerPoint(player);
 		if (point !== null) badges.append(element('span', 'badge badge-primary', `${point} pts`));
 		badges.append(element('span', `badge ${player.vc ? 'badge-success' : 'badge-danger'}`, player.vc ? 'VCあり' : 'VCなし'));
