@@ -1,4 +1,4 @@
-const ALL_MAPS = ["Abyss", "Ascent", "Haven", "Lotus", "Split", "Summit", "Sunset"];
+const ALL_MAPS = ["Abyss", "Bind", "Corrode", "Haven", "Lotus", "Summit", "Sunset"];
 
 function mapBgStyle(map, tint) {
 	return `linear-gradient(${tint}, ${tint}), url('/valorant/static/pictures/${map.toLowerCase()}.png')`;

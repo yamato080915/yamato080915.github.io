@@ -26,7 +26,7 @@ css:
 						</div>
 					</div>
 					<label class="shuffle-check"><input id="p-vc" type="checkbox" checked>ボイスチャットあり</label>
-					<label class="shuffle-check shuffle-consent"><input id="p-rank-consent" type="checkbox" required><span>Riot IDをHenrikDev APIへ送信してランクを取得することに同意します（<a href="https://docs.henrikdev.xyz/api-reference/valorant/get-mmr-by-name-v3" target="_blank" rel="noopener noreferrer">APIについて</a>）</span></label>
+					<label class="shuffle-check shuffle-consent"><input id="p-rank-consent" type="checkbox" required><span>Riot IDをHenrikDev APIへ送信してランクを取得することに同意します（<a href="https://docs.henrikdev.xyz/api-reference/valorant/get-mmr-by-name-v3" target="_blank" rel="noopener noreferrer">APIについて</a>）。Riot ID、表示名、ランク、VC設定はこの募集の参加者に表示されます。</span></label>
 					<button id="rank-lookup-btn" class="button button-secondary" type="button" disabled>ランクを取得</button>
 					<div id="rank-lookup-result" class="shuffle-rank-result" role="status" aria-live="polite" hidden></div>
 					<button id="registration-submit" class="button button-primary" type="submit" disabled>参加登録する</button>
@@ -34,7 +34,7 @@ css:
 			</form>
 			<p id="registration-status" class="field-help shuffle-status" role="status" aria-live="polite"></p>
 			<button id="registration-retry" class="button button-secondary shuffle-help" type="button" hidden>再確認する</button>
-			<p class="field-help shuffle-help">同じブラウザから登録情報を修正できます。チームに入った後は修正できません。途中参加で補充待ちの間は修正可能です。</p>
+			<p class="field-help shuffle-help">同じブラウザから登録情報を修正できます。チームに入った後は修正できません。途中参加で補充待ちの間は修正可能です。募集データは募集の有効期限から7日以内に削除されます。</p>
 		</div>
 	</details>
 	<section id="participant-directory-panel" class="panel" hidden>
