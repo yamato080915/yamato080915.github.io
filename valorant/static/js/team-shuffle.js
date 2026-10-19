@@ -19,7 +19,7 @@
 		const label = value.tier === 'unranked' ? 'ランクなし'
 			: value.tier[0].toUpperCase() + value.tier.slice(1) + (value.tier === 'radiant' ? '' : ` ${value.div}`);
 		if (value.tier !== 'unranked') {
-			const image = element('img', 'shuffle-rank-icon');
+			const image = element('img', `shuffle-rank-icon${value.tier === 'radiant' ? ' shuffle-rank-icon-radiant' : ''}`);
 			const division = value.tier === 'radiant' ? 1 : value.div;
 			image.src = `/valorant/static/pictures/rank-icons/${value.tier[0].toUpperCase() + value.tier.slice(1)}/${division}.png`;
 			image.alt = '';

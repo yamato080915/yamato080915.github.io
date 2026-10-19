@@ -50,7 +50,7 @@
 		const badge = element('span', 'badge badge-neutral shuffle-rank-badge');
 		const label = rankLabel(value);
 		if (value.tier !== 'unranked') {
-			const image = element('img', 'shuffle-rank-icon');
+			const image = element('img', `shuffle-rank-icon${value.tier === 'radiant' ? ' shuffle-rank-icon-radiant' : ''}`);
 			const division = value.tier === 'radiant' ? 1 : value.div;
 			image.src = `/valorant/static/pictures/rank-icons/${value.tier[0].toUpperCase() + value.tier.slice(1)}/${division}.png`;
 			image.alt = '';
