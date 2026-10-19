@@ -70,14 +70,20 @@
 	}
 
 	function evaluateTeams(teams) {
-		return scoreFromTotals(
+		const score = scoreFromTotals(
 			teams.map(team => team.members.reduce((sum, player) => sum + player.point, 0)),
 			teams.map(team => team.members.filter(player => !player.vc).length)
 		);
+		const internalPointSpreads = teams.map(team => {
+			const points = team.members.map(player => player.point);
+			return Math.max(...points) - Math.min(...points);
+		});
+		score.internalPointSpread = Math.max(...internalPointSpreads) - Math.min(...internalPointSpreads);
+		return score;
 	}
 
 	function compareScores(left, right) {
-		for (const key of ['pointSpread', 'pointDeviation', 'vcDeviation']) {
+		for (const key of ['pointSpread', 'pointDeviation', 'vcDeviation', 'internalPointSpread']) {
 			const difference = left[key] - right[key];
 			if (Math.abs(difference) > EPSILON) return difference < 0 ? -1 : 1;
 		}
