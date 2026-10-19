@@ -20,7 +20,7 @@
 			: value.tier[0].toUpperCase() + value.tier.slice(1) + (value.tier === 'radiant' ? '' : ` ${value.div}`);
 		if (value.tier !== 'unranked') {
 			const image = element('img', 'shuffle-rank-icon');
-			const division = value.tier === 'radiant' ? '' : value.div;
+			const division = value.tier === 'radiant' ? 1 : value.div;
 			image.src = `/valorant/static/pictures/rank-icons/${value.tier[0].toUpperCase() + value.tier.slice(1)}/${division}.png`;
 			image.alt = '';
 			image.setAttribute('aria-hidden', 'true');
