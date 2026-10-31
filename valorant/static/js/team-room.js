@@ -233,6 +233,15 @@
 			name: 'team_shuffle_get_participants',
 			body: { p_room_id: match[1], p_organizer_token: token ?? null }
 		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/participants$/)) && verb === 'POST') return {
+			name: 'team_shuffle_add_participant',
+			body: {
+				p_room_id: match[1], p_organizer_token: token ?? null,
+				p_name: body?.name ?? null, p_riot_name: body?.riotName ?? null,
+				p_riot_tag: body?.riotTag ?? null, p_tier: body?.tier ?? null,
+				p_division: body?.division ?? null, p_vc: body?.vc ?? false
+			}
+		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/rank-mode$/)) && verb === 'PUT') return {
 			name: 'team_shuffle_set_rank_mode',
 			body: {
@@ -558,6 +567,12 @@
 				if (!isId(id)) throw new Error('参加者IDが不正です。');
 				await this.settlePending();
 				this.absorb(await this.request(`/participants/${id}`, 'DELETE'));
+			});
+		}
+		addParticipant(input) {
+			return this.run(async () => {
+				const snapshot = await this.request('/participants', 'POST', input);
+				this.absorb(snapshot);
 			});
 		}
 		setTeamCount(count) {

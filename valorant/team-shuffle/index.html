@@ -62,6 +62,45 @@ css:
 			<div class="panel-body"><p class="field-help">チーム分け後の登録者はこちらに追加されます。補充でチームに入るまでは情報を修正できます。</p></div>
 		</section>
 	</div>
+	<details id="admin-add-participant-editor" class="panel shuffle-register-form-panel shuffle-register-editor" data-collapsible="true">
+		<summary class="panel-header shuffle-register-summary">
+			<span>手動でユーザーを追加</span>
+			<span class="badge badge-neutral">入力フォームを開く</span>
+		</summary>
+		<div class="panel-body">
+			<form id="admin-add-participant-form" class="shuffle-stack">
+				<fieldset class="shuffle-fields">
+					<div><label class="field-label" for="admin-player-name">表示名</label><input id="admin-player-name" class="field-control" type="text" maxlength="80" autocomplete="nickname" required></div>
+					<div>
+						<span class="field-label">Riot ID</span>
+						<div class="shuffle-riot-id">
+							<label><span class="sr-only">Game Name</span><input id="admin-player-riot-name" class="field-control" type="text" maxlength="64" autocomplete="off" placeholder="Game Name" required></label>
+							<span class="shuffle-riot-separator" aria-hidden="true">#</span>
+							<label><span class="sr-only">Tagline</span><input id="admin-player-riot-tag" class="field-control" type="text" maxlength="64" autocomplete="off" placeholder="Tagline" required></label>
+						</div>
+					</div>
+					<div>
+						<label class="field-label" for="admin-player-tier">ランク</label>
+						<select id="admin-player-tier" class="field-control" required>
+							<option value="unranked">ランクなし</option>
+							<option value="iron">Iron</option><option value="bronze">Bronze</option><option value="silver">Silver</option>
+							<option value="gold">Gold</option><option value="platinum">Platinum</option><option value="diamond">Diamond</option>
+							<option value="ascendant">Ascendant</option><option value="immortal">Immortal</option><option value="radiant">Radiant</option>
+						</select>
+					</div>
+					<div>
+						<label class="field-label" for="admin-player-division">ディビジョン</label>
+						<select id="admin-player-division" class="field-control" required>
+							<option value="1">1</option><option value="2">2</option><option value="3">3</option>
+						</select>
+					</div>
+					<label class="shuffle-check"><input id="admin-player-vc" type="checkbox">ボイスチャットあり</label>
+					<button id="admin-add-participant-submit" type="submit" class="button button-primary">参加登録する</button>
+				</fieldset>
+				<p id="admin-add-participant-status" class="field-help shuffle-status" role="status" aria-live="polite"></p>
+			</form>
+		</div>
+	</details>
 
 	<section class="panel">
 		<div class="panel-header">チーム分け</div>

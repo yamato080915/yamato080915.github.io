@@ -13,6 +13,39 @@
 		try { return sessionStorage.getItem(ADMIN_SESSION_KEY); }
 		catch (_) { return null; }
 	}
+	function setupParticipantForm() {
+		const form = $('admin-add-participant-form');
+		const tier = $('admin-player-tier');
+		const division = $('admin-player-division');
+		const updateDivision = () => {
+			const limited = ['unranked', 'radiant'].includes(tier.value);
+			division.disabled = limited;
+			if (limited) division.value = '1';
+		};
+		tier.addEventListener('change', updateDivision);
+		updateDivision();
+		form.addEventListener('submit', async event => {
+			event.preventDefault();
+			const submit = $('admin-add-participant-submit');
+			submit.disabled = true;
+			$('admin-add-participant-status').textContent = '参加者を追加しています…';
+			try {
+				await manager.addParticipant({
+					name: $('admin-player-name').value.trim(),
+					riotName: $('admin-player-riot-name').value.trim(),
+					riotTag: $('admin-player-riot-tag').value.trim(),
+					tier: tier.value,
+					division: Number(division.value),
+					vc: $('admin-player-vc').checked
+				});
+				form.reset(); updateDivision();
+				$('admin-add-participant-status').textContent = '参加者を追加しました。';
+			} catch (error) {
+				$('admin-add-participant-status').textContent = error.message;
+				$('admin-add-participant-status').dataset.error = 'true';
+			} finally { submit.disabled = false; render(); schedule(); }
+		});
+	}
 	function saveSession(value) {
 		try { sessionStorage.setItem(ADMIN_SESSION_KEY, value); }
 		catch (_) { throw new Error('管理者セッションを保存できません。ブラウザの設定を確認してください。'); }
@@ -296,6 +329,7 @@
 			});
 			if (roomId) await manager.open(roomId);
 			else manager.restore();
+			setupParticipantForm();
 			replacingExpired = Boolean(manager.state && (
 				manager.state.room.status === 'expired'
 				|| Date.parse(manager.state.room.expiresAt) <= Date.now()
