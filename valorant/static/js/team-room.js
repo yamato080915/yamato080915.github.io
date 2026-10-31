@@ -73,6 +73,18 @@
 		}
 		return memberIds.length === new Set(memberIds).size;
 	}
+	function validSnapshotTeams(teams, players) {
+		if (teams === null) return true;
+		if (!Array.isArray(teams) || teams.length < 2 || teams.length > 100) return false;
+		const memberIds = [];
+		for (const team of teams) {
+			if (!team || !Array.isArray(team.members) || !Number.isInteger(team.vacancies) || team.vacancies < 0
+				|| team.members.length + team.vacancies < 1 || team.members.length + team.vacancies > 5
+				|| !team.members.every(member => member && isId(member.id) && players.has(member.id))) return false;
+			memberIds.push(...team.members.map(member => member.id));
+		}
+		return memberIds.length === new Set(memberIds).size;
+	}
 	function validRoom(room) {
 		const mapSelection = room?.mapSelection;
 		return room && isId(room.id) && ['open', 'closed', 'expired'].includes(room.status)
@@ -86,7 +98,8 @@
 	}
 	function validateSnapshot(value) {
 		if (!value || !validRoom(value.room) || !Array.isArray(value.participants) || !value.participants.every(validPlayer)
-			|| new Set(value.participants.map(p => p.id)).size !== value.participants.length) {
+			|| new Set(value.participants.map(p => p.id)).size !== value.participants.length
+			|| (value.teams !== undefined && !validSnapshotTeams(value.teams, new Set(value.participants.map(p => p.id))))) {
 			throw new Error('サーバーから受信した参加者情報が不正です。');
 		}
 		return value;
@@ -191,6 +204,16 @@
 	function normalizePendingResult(state) {
 		if (state?.pending?.request && state.pending.request.teams === undefined) {
 			state.pending.request.teams = teamResultPayload(state.pending.teams);
+		}
+	}
+	function normalizeLegacyTeamState(state) {
+		const teams = state?.lastTeams;
+		if (!Array.isArray(teams)) return;
+		const hasComputedPoints = teams.every(team => Array.isArray(team?.members)
+			&& team.members.every(member => Number.isFinite(member?.point)));
+		if (!hasComputedPoints) {
+			state.lastTeams = null;
+			state.pending = null;
 		}
 	}
 	class ApiError extends Error {
@@ -377,6 +400,7 @@
 			normalizeMapSelectionState(saved);
 			normalizePlayerIdentityState(saved);
 			normalizePendingResult(saved);
+			normalizeLegacyTeamState(saved);
 			if (!isId(active) || !validateState(saved) || saved.room.id !== active) throw new Error('募集の保存データが不正です。データを保護するため自動作成を停止しました。');
 			normalizeFixedState(saved);
 			this.state = saved;
@@ -400,6 +424,7 @@
 			const snapshot = validateSnapshot(raw);
 			const state = this.state;
 			if (snapshot.room.id !== state.room.id) throw new Error('募集IDが一致しません。');
+			const previousOperationId = state.room.lastOperationId;
 			if (snapshot.room.revision < state.room.revision) return;
 			const incoming = new Map(snapshot.participants.map(p => [p.id, p]));
 			if (state.pending) {
@@ -427,6 +452,21 @@
 					team.vacancies += previousSize - team.members.length;
 					team.totalPoints = team.members.reduce((sum, p) => sum + p.point, 0);
 				}
+			}
+			if (!state.pending && snapshot.teams !== undefined
+				&& (snapshot.room.lastOperationId !== previousOperationId || (state.lastTeams === null && snapshot.teams !== null))) {
+				state.lastTeams = snapshot.teams === null ? null : snapshot.teams.map(team => {
+					const members = team.members.map(player => {
+						const current = incoming.get(player.id);
+						return current ? { ...current, point: this.point(current) } : null;
+					}).filter(Boolean);
+					return {
+						...team,
+						members,
+						fixed: true,
+						totalPoints: members.reduce((sum, player) => sum + this.point(player), 0)
+					};
+				});
 			}
 			this.save();
 		}
