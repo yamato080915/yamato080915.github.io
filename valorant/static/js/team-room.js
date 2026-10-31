@@ -275,6 +275,23 @@
 			this.fetcher = fetcher;
 			this.url = (config.url || SUPABASE_URL).replace(/\/$/, '');
 			this.key = config.key || SUPABASE_PUBLISHABLE_KEY;
+			this.accessToken = config.accessToken || null;
+		}
+		async signIn(email, password) {
+			const res = await this.fetcher(`${this.url}/auth/v1/token?grant_type=password`, {
+				method: 'POST',
+				headers: { Accept: 'application/json', 'Content-Type': 'application/json', apikey: this.key },
+				body: JSON.stringify({ email, password }),
+				cache: 'no-store',
+				credentials: 'omit'
+			});
+			let data;
+			try { data = await res.json(); } catch (_) { throw new ApiError('認証サーバーから正しい応答がありません。', res.status); }
+			if (!res.ok || typeof data?.access_token !== 'string') {
+				throw new ApiError(data?.error_description || data?.msg || 'メールアドレスまたはパスワードが正しくありません。', res.status, 'authentication_failed');
+			}
+			this.accessToken = data.access_token;
+			return data;
 		}
 		async request(path, { method = 'GET', token, body, signal } = {}) {
 			if (!validSupabaseConfig(this.url, this.key)) {
@@ -288,6 +305,7 @@
 			const timer = setTimeout(() => abort.abort(), 10000);
 			try {
 				const headers = { Accept: 'application/json', 'Content-Type': 'application/json', apikey: this.key };
+				if (this.accessToken) headers.Authorization = ['Bearer', this.accessToken].join(' ');
 				const res = await this.fetcher(`${this.url}/rest/v1/rpc/${rpc.name}`, {
 					method: 'POST', headers, body: JSON.stringify(rpc.body),
 					signal: abort.signal, cache: 'default', credentials: 'omit'
@@ -440,6 +458,23 @@
 			this.write(ACTIVE_KEY, draft.id);
 			this.state = next;
 			this.write(CREATION_KEY, null);
+		}
+		async open(roomId) {
+			if (!isId(roomId)) throw new Error('募集IDが不正です。');
+			const snapshot = validateSnapshot(await this.api.request(`/rooms/${roomId}/participants`));
+			const state = {
+				schemaVersion: 3,
+				room: snapshot.room,
+				organizerToken: this.token(),
+				players: snapshot.participants,
+				standbyPlayers: [],
+				lastTeams: null,
+				teamCount: 2,
+				pending: null
+			};
+			this.write(PREFIX + roomId, state);
+			this.write(ACTIVE_KEY, roomId);
+			this.state = state;
 		}
 		start() {
 			return this.run(async () => {

@@ -8,3 +8,6 @@ node_modules
 .pnpm-store
 valorant/team-shuffle/API.md
 supabase/*
+team-shuffle-admin-enable.sql
+team-shuffle-admin.md
+team-shuffle-admin.sql

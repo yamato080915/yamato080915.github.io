@@ -8,6 +8,19 @@ css:
 <h1 class="page-title mb-8 text-center">チーム分け</h1>
 
 <div id="team-shuffle-app" class="shuffle-stack" data-register-url="{{ '/valorant/team-shuffle/register' | relative_url }}" data-points-url="{{ '/valorant/team-shuffle/points.json' | relative_url }}">
+	<section id="admin-login" class="panel" hidden>
+		<div class="panel-header">管理者ログイン</div>
+		<div class="panel-body">
+			<form id="admin-login-form" class="shuffle-stack">
+				<label class="field-label" for="admin-email">メールアドレス</label>
+				<input id="admin-email" class="field-control" type="email" autocomplete="username" required>
+				<label class="field-label" for="admin-password">パスワード</label>
+				<input id="admin-password" class="field-control" type="password" autocomplete="current-password" required>
+				<button id="admin-login-submit" type="submit" class="button button-primary">ログイン</button>
+				<p id="admin-login-status" class="field-help shuffle-status" role="status" aria-live="polite"></p>
+			</form>
+		</div>
+	</section>
 	<section class="panel">
 		<div class="panel-header shuffle-heading"><span>参加者を募集</span><span id="room-state" class="badge badge-neutral">準備中</span></div>
 		<div class="panel-body">

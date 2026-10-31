@@ -3,10 +3,19 @@
 	const $ = id => document.getElementById(id);
 	const app = $('team-shuffle-app');
 	let manager, busy = false, syncing = false, timer, halted = false, pointsReady = false, renderKey = '', replacingExpired = false, revealMapPreferences = false;
+	const ADMIN_SESSION_KEY = 'valorant.teamShuffle.adminSession';
 	const labels = { open: '受付中', closed: '募集終了', expired: '期限切れ' };
 	function status(message, error = false) {
 		$('sync-status').textContent = message;
 		$('sync-status').dataset.error = String(error);
+	}
+	function sessionStorageValue() {
+		try { return sessionStorage.getItem(ADMIN_SESSION_KEY); }
+		catch (_) { return null; }
+	}
+	function saveSession(value) {
+		try { sessionStorage.setItem(ADMIN_SESSION_KEY, value); }
+		catch (_) { throw new Error('管理者セッションを保存できません。ブラウザの設定を確認してください。'); }
 	}
 	function element(tag, className, text) {
 		const el = document.createElement(tag);
@@ -261,11 +270,32 @@
 	window.addEventListener('storage', event => { if (event.key?.startsWith(TeamRoom.PREFIX)) refresh(); });
 	async function init() {
 		try {
+			const roomId = new URLSearchParams(location.search).get('id');
+			const api = new TeamRoom.Api(undefined, { accessToken: sessionStorageValue() });
+			const login = $('admin-login');
+			if (roomId && !api.accessToken) {
+				login.hidden = false;
+				$('admin-login-form').addEventListener('submit', async event => {
+					event.preventDefault();
+					const submit = $('admin-login-submit');
+					submit.disabled = true;
+					try {
+						const session = await api.signIn($('admin-email').value.trim(), $('admin-password').value);
+						saveSession(session.access_token);
+						location.reload();
+					} catch (error) {
+						$('admin-login-status').textContent = error.message;
+						$('admin-login-status').dataset.error = 'true';
+					} finally { submit.disabled = false; }
+				});
+				return;
+			}
 			manager = new TeamRoom.RoomManager({
-				api: new TeamRoom.Api(), storage: localStorage, balancer: TeamBalancer,
+				api, storage: localStorage, balancer: TeamBalancer,
 				withLock: task => navigator.locks ? navigator.locks.request('valorant-team-shuffle-host', task) : task()
 			});
-			manager.restore();
+			if (roomId) await manager.open(roomId);
+			else manager.restore();
 			replacingExpired = Boolean(manager.state && (
 				manager.state.room.status === 'expired'
 				|| Date.parse(manager.state.room.expiresAt) <= Date.now()
