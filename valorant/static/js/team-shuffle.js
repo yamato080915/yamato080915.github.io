@@ -384,7 +384,7 @@
 			else manager.restore();
 			setupParticipantForm();
 			setupEditForm();
-			replacingExpired = Boolean(manager.state && (
+			replacingExpired = !roomId && Boolean(manager.state && (
 				manager.state.room.status === 'expired'
 				|| Date.parse(manager.state.room.expiresAt) <= Date.now()
 			));
