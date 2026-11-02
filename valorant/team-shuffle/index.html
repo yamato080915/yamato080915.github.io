@@ -53,7 +53,10 @@ css:
 
 	<div class="shuffle-columns">
 		<section class="panel">
-			<div class="panel-header">参加者（<span id="player-count">0</span>人）</div>
+			<div class="panel-header shuffle-heading">
+				<span>参加者（<span id="player-count">0</span>人）</span>
+				<button id="admin-add-participant-open" type="button" class="button button-primary button-sm">手動でユーザーを追加</button>
+			</div>
 			<ul id="player-list" class="list shuffle-list"></ul>
 		</section>
 		<section class="panel">
@@ -62,11 +65,8 @@ css:
 			<div class="panel-body"><p class="field-help">チーム分け後の登録者はこちらに追加されます。補充でチームに入るまでは情報を修正できます。</p></div>
 		</section>
 	</div>
-	<details id="admin-add-participant-editor" class="panel shuffle-register-form-panel shuffle-register-editor" data-collapsible="true">
-		<summary class="panel-header shuffle-register-summary">
-			<span>手動でユーザーを追加</span>
-			<span class="badge badge-neutral">入力フォームを開く</span>
-		</summary>
+	<dialog id="admin-add-participant-dialog" class="panel shuffle-admin-dialog">
+		<div class="panel-header">手動でユーザーを追加</div>
 		<div class="panel-body">
 			<form id="admin-add-participant-form" class="shuffle-stack">
 				<fieldset class="shuffle-fields">
@@ -95,12 +95,15 @@ css:
 						</select>
 					</div>
 					<label class="shuffle-check"><input id="admin-player-vc" type="checkbox">ボイスチャットあり</label>
-					<button id="admin-add-participant-submit" type="submit" class="button button-primary">参加登録する</button>
+					<div class="shuffle-actions">
+						<button id="admin-add-participant-cancel" type="button" class="button button-secondary">キャンセル</button>
+						<button id="admin-add-participant-submit" type="submit" class="button button-primary">参加登録する</button>
+					</div>
 				</fieldset>
 				<p id="admin-add-participant-status" class="field-help shuffle-status" role="status" aria-live="polite"></p>
 			</form>
 		</div>
-	</details>
+	</dialog>
 	<dialog id="admin-edit-participant-dialog" class="panel shuffle-admin-dialog">
 		<form id="admin-edit-participant-form" class="shuffle-stack" method="dialog">
 			<div class="panel-header">参加者情報を編集</div>

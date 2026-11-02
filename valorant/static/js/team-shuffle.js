@@ -15,6 +15,7 @@
 	}
 	function setupParticipantForm() {
 		const form = $('admin-add-participant-form');
+		const dialog = $('admin-add-participant-dialog');
 		const tier = $('admin-player-tier');
 		const division = $('admin-player-division');
 		const updateDivision = () => {
@@ -22,6 +23,8 @@
 			division.disabled = limited;
 			if (limited) division.value = '1';
 		};
+		$('admin-add-participant-open').addEventListener('click', () => dialog.showModal());
+		$('admin-add-participant-cancel').addEventListener('click', () => dialog.close());
 		tier.addEventListener('change', updateDivision);
 		updateDivision();
 		form.addEventListener('submit', async event => {
@@ -40,6 +43,7 @@
 				});
 				form.reset(); updateDivision();
 				$('admin-add-participant-status').textContent = '参加者を追加しました。';
+				dialog.close();
 			} catch (error) {
 				$('admin-add-participant-status').textContent = error.message;
 				$('admin-add-participant-status').dataset.error = 'true';
