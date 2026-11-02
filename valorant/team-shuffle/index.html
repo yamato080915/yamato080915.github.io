@@ -101,6 +101,34 @@ css:
 			</form>
 		</div>
 	</details>
+	<dialog id="admin-edit-participant-dialog" class="panel shuffle-admin-dialog">
+		<form id="admin-edit-participant-form" class="shuffle-stack" method="dialog">
+			<div class="panel-header">参加者情報を編集</div>
+			<div class="panel-body">
+				<input id="admin-edit-participant-id" type="hidden">
+				<label class="field-label" for="admin-edit-player-name">表示名</label>
+				<input id="admin-edit-player-name" class="field-control" type="text" maxlength="80" required>
+				<span class="field-label">Riot ID</span>
+				<div class="shuffle-riot-id">
+					<input id="admin-edit-player-riot-name" class="field-control" type="text" maxlength="64" placeholder="Game Name" required>
+					<span class="shuffle-riot-separator" aria-hidden="true">#</span>
+					<input id="admin-edit-player-riot-tag" class="field-control" type="text" maxlength="64" placeholder="Tagline" required>
+				</div>
+				<label class="field-label" for="admin-edit-player-tier">ランク</label>
+				<select id="admin-edit-player-tier" class="field-control" required>
+					<option value="unranked">ランクなし</option><option value="iron">Iron</option><option value="bronze">Bronze</option><option value="silver">Silver</option><option value="gold">Gold</option><option value="platinum">Platinum</option><option value="diamond">Diamond</option><option value="ascendant">Ascendant</option><option value="immortal">Immortal</option><option value="radiant">Radiant</option>
+				</select>
+				<label class="field-label" for="admin-edit-player-division">ディビジョン</label>
+				<select id="admin-edit-player-division" class="field-control" required><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+				<label class="shuffle-check"><input id="admin-edit-player-vc" type="checkbox">ボイスチャットあり</label>
+				<div class="shuffle-actions">
+					<button id="admin-edit-player-cancel" class="button button-secondary" type="button">キャンセル</button>
+					<button id="admin-edit-player-submit" class="button button-primary" type="submit">保存</button>
+				</div>
+				<p id="admin-edit-player-status" class="field-help shuffle-status" role="status" aria-live="polite"></p>
+			</div>
+		</form>
+	</dialog>
 
 	<section class="panel">
 		<div class="panel-header">チーム分け</div>
@@ -113,7 +141,7 @@ css:
 			<p class="field-help shuffle-help">チームが確定した参加者の情報は修正できなくなります。補充時は固定チームの既存メンバーを維持して先に空き枠を埋め、固定を外したチームは既存メンバーと残りの補充対象をまとめて再編成します。選ばれなかった途中参加者は補充待ちに残ります。リセットすると全員が通常参加に戻り、受付中なら再び情報を修正できます。</p>
 		</div>
 	</section>
-
+151
 	<section>
 		<h2 class="section-title shuffle-block">結果</h2>
 		<div id="result" class="shuffle-results"></div>

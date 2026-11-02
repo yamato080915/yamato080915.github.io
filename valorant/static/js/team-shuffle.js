@@ -46,6 +46,49 @@
 			} finally { submit.disabled = false; render(); schedule(); }
 		});
 	}
+	function setupEditForm() {
+		if (!manager.api.accessToken) return;
+		const dialog = $('admin-edit-participant-dialog');
+		const tier = $('admin-edit-player-tier');
+		const division = $('admin-edit-player-division');
+		const updateDivision = () => {
+			const limited = ['unranked', 'radiant'].includes(tier.value);
+			division.disabled = limited;
+			if (limited) division.value = '1';
+		};
+		tier.addEventListener('change', updateDivision);
+		$('admin-edit-player-cancel').addEventListener('click', () => dialog.close());
+		$('admin-edit-participant-form').addEventListener('submit', async event => {
+			event.preventDefault();
+			const submit = $('admin-edit-player-submit');
+			submit.disabled = true;
+			try {
+				await manager.updateParticipant($('admin-edit-participant-id').value, {
+					name: $('admin-edit-player-name').value.trim(),
+					riotName: $('admin-edit-player-riot-name').value.trim(),
+					riotTag: $('admin-edit-player-riot-tag').value.trim(),
+					tier: tier.value, division: Number(division.value),
+					vc: $('admin-edit-player-vc').checked
+				});
+				dialog.close();
+			} catch (error) {
+				$('admin-edit-player-status').textContent = error.message;
+				$('admin-edit-player-status').dataset.error = 'true';
+			} finally { submit.disabled = false; render(); schedule(); }
+		});
+		updateDivision();
+	}
+	function openEditForm(player) {
+		$('admin-edit-participant-id').value = player.id;
+		$('admin-edit-player-name').value = player.name;
+		$('admin-edit-player-riot-name').value = player.riotId?.gameName || '';
+		$('admin-edit-player-riot-tag').value = player.riotId?.tagline || '';
+		$('admin-edit-player-tier').value = player.tier;
+		$('admin-edit-player-division').value = String(player.div);
+		$('admin-edit-player-vc').checked = player.vc;
+		$('admin-edit-player-status').textContent = '';
+		$('admin-edit-participant-dialog').showModal();
+	}
 	function saveSession(value) {
 		try { sessionStorage.setItem(ADMIN_SESSION_KEY, value); }
 		catch (_) { throw new Error('管理者セッションを保存できません。ブラウザの設定を確認してください。'); }
@@ -91,6 +134,11 @@
 			if (!confirm(p.name + 'を削除・退出扱いにしますか？\n参加者本人による再編集はできなくなります。')) return;
 			perform(() => manager.remove(p.id));
 		});
+		if (manager.api.accessToken) {
+			const edit = element('button', 'button button-secondary button-sm', '編集');
+			edit.type = 'button'; edit.addEventListener('click', () => openEditForm(p));
+			row.append(edit);
+		}
 		row.append(remove); return row;
 	}
 	function list(id, players, empty) {
@@ -325,11 +373,13 @@
 			}
 			manager = new TeamRoom.RoomManager({
 				api, storage: localStorage, balancer: TeamBalancer,
+				storagePrefix: roomId && api.accessToken ? TeamRoom.PREFIX + 'admin.' : TeamRoom.PREFIX,
 				withLock: task => navigator.locks ? navigator.locks.request('valorant-team-shuffle-host', task) : task()
 			});
 			if (roomId) await manager.open(roomId);
 			else manager.restore();
 			setupParticipantForm();
+			setupEditForm();
 			replacingExpired = Boolean(manager.state && (
 				manager.state.room.status === 'expired'
 				|| Date.parse(manager.state.room.expiresAt) <= Date.now()

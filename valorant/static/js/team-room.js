@@ -242,6 +242,16 @@
 				p_division: body?.division ?? null, p_vc: body?.vc ?? false
 			}
 		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/participants\/([^/]+)$/)) && verb === 'PUT') return {
+			name: 'team_shuffle_update_participant',
+			body: {
+				p_room_id: match[1], p_organizer_token: token ?? null,
+				p_participant_id: match[2], p_name: body?.name ?? null,
+				p_riot_name: body?.riotName ?? null, p_riot_tag: body?.riotTag ?? null,
+				p_tier: body?.tier ?? null, p_division: body?.division ?? null,
+				p_vc: body?.vc ?? false
+			}
+		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/rank-mode$/)) && verb === 'PUT') return {
 			name: 'team_shuffle_set_rank_mode',
 			body: {
@@ -383,8 +393,8 @@
 		}
 	}
 	class RoomManager {
-		constructor({ api, storage, balancer, points, uuid = () => crypto.randomUUID(), token = randomToken, withLock = task => task() }) {
-			Object.assign(this, { api, storage, balancer, points, uuid, token, withLock });
+		constructor({ api, storage, balancer, points, uuid = () => crypto.randomUUID(), token = randomToken, withLock = task => task(), storagePrefix = PREFIX }) {
+			Object.assign(this, { api, storage, balancer, points, uuid, token, withLock, storagePrefix });
 			this.state = null;
 			this.queue = Promise.resolve();
 			this.syncJob = null;
@@ -402,9 +412,9 @@
 			catch (_) { throw new Error('ブラウザに保存できないため処理を停止しました。保存設定や空き容量を確認してください。'); }
 		}
 		restore() {
-			const active = this.read(ACTIVE_KEY);
+			const active = this.read(this.storagePrefix + 'active');
 			if (!active) { this.state = null; return; }
-			const saved = this.read(PREFIX + active);
+			const saved = this.read(this.storagePrefix + active);
 			normalizeRankModeState(saved);
 			normalizeMapSelectionState(saved);
 			normalizePlayerIdentityState(saved);
@@ -414,7 +424,7 @@
 			normalizeFixedState(saved);
 			this.state = saved;
 		}
-		save() { this.write(PREFIX + this.state.room.id, this.state); }
+		save() { this.write(this.storagePrefix + this.state.room.id, this.state); }
 		cancelSync() { this.syncJob?.controller.abort(); }
 		run(task, interruptSync = true) {
 			if (interruptSync) this.cancelSync();
@@ -496,17 +506,18 @@
 			}
 		}
 		async create() {
-			let draft = this.read(CREATION_KEY);
+			const creationKey = this.storagePrefix + 'creation';
+			let draft = this.read(creationKey);
 			if (draft?.id === this.state?.room.id) draft = null;
-			if (!draft) { draft = { id: this.uuid(), organizerToken: this.token() }; this.write(CREATION_KEY, draft); }
+			if (!draft) { draft = { id: this.uuid(), organizerToken: this.token() }; this.write(creationKey, draft); }
 			if (!isId(draft.id) || !isToken(draft.organizerToken)) throw new Error('募集作成の保存データが不正です。');
 			const snapshot = validateSnapshot(await this.api.request('/rooms', { method: 'POST', body: draft }));
 			if (snapshot.room.id !== draft.id) throw new Error('作成した募集IDが一致しません。');
 			const next = { schemaVersion: 3, room: snapshot.room, organizerToken: draft.organizerToken, players: snapshot.participants, standbyPlayers: [], lastTeams: null, teamCount: 2, pending: null };
-			this.write(PREFIX + draft.id, next);
-			this.write(ACTIVE_KEY, draft.id);
+			this.write(this.storagePrefix + draft.id, next);
+			this.write(this.storagePrefix + 'active', draft.id);
 			this.state = next;
-			this.write(CREATION_KEY, null);
+			this.write(creationKey, null);
 		}
 		async open(roomId) {
 			if (!isId(roomId)) throw new Error('募集IDが不正です。');
@@ -521,8 +532,8 @@
 				teamCount: 2,
 				pending: null
 			};
-			this.write(PREFIX + roomId, state);
-			this.write(ACTIVE_KEY, roomId);
+			this.write(this.storagePrefix + roomId, state);
+			this.write(this.storagePrefix + 'active', roomId);
 			this.state = state;
 		}
 		start() {
@@ -572,6 +583,12 @@
 		addParticipant(input) {
 			return this.run(async () => {
 				const snapshot = await this.request('/participants', 'POST', input);
+				this.absorb(snapshot);
+			});
+		}
+		updateParticipant(id, input) {
+			return this.run(async () => {
+				const snapshot = await this.request(`/participants/${id}`, 'PUT', input);
 				this.absorb(snapshot);
 			});
 		}

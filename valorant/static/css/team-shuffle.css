@@ -37,6 +37,8 @@
 .shuffle-register-summary::-webkit-details-marker { display: none; }
 .shuffle-register-editor[data-collapsible="false"] > .shuffle-register-summary { cursor: default; }
 .shuffle-register-editor[data-collapsible="false"] > .shuffle-register-summary .badge { opacity: .7; }
+.shuffle-admin-dialog { width: min(34rem, calc(100% - 2rem)); max-width: 34rem; padding: 0; border: 0; border-radius: .75rem; }
+.shuffle-admin-dialog::backdrop { background: rgb(15 23 42 / .5); }
 .shuffle-viewer-person { align-items: flex-start; }
 .shuffle-map-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
 .shuffle-map-option { position: relative; min-height: 4.4rem; overflow: hidden; border: 2px solid #cbd5e1; border-radius: .6rem; color: #fff; background-position: center; background-size: cover; text-shadow: 0 1px 3px #000; font-weight: 700; text-transform: capitalize; }
