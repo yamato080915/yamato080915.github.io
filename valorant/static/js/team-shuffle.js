@@ -4,6 +4,7 @@
 	const app = $('team-shuffle-app');
 	let manager, busy = false, syncing = false, timer, halted = false, pointsReady = false, renderKey = '', replacingExpired = false, revealMapPreferences = false;
 	const ADMIN_SESSION_KEY = 'valorant.teamShuffle.adminSession';
+	const ADMIN_TAB_KEY = 'valorant.teamShuffle.adminTab';
 	const labels = { open: '受付中', closed: '募集終了', expired: '期限切れ' };
 	function status(message, error = false) {
 		$('sync-status').textContent = message;
@@ -12,6 +13,18 @@
 	function sessionStorageValue() {
 		try { return sessionStorage.getItem(ADMIN_SESSION_KEY); }
 		catch (_) { return null; }
+	}
+	function adminTabId() {
+		try {
+			let value = sessionStorage.getItem(ADMIN_TAB_KEY);
+			if (!value) {
+				value = crypto.randomUUID();
+				sessionStorage.setItem(ADMIN_TAB_KEY, value);
+			}
+			return value;
+		} catch (_) {
+			throw new Error('管理者タブの状態を保存できません。ブラウザの設定を確認してください。');
+		}
 	}
 	function setupParticipantForm() {
 		const form = $('admin-add-participant-form');
@@ -377,7 +390,9 @@
 			}
 			manager = new TeamRoom.RoomManager({
 				api, storage: localStorage, balancer: TeamBalancer,
-				storagePrefix: roomId && api.accessToken ? TeamRoom.PREFIX + 'admin.' : TeamRoom.PREFIX,
+				storagePrefix: roomId && api.accessToken
+					? TeamRoom.PREFIX + 'admin.' + adminTabId() + '.'
+					: TeamRoom.PREFIX,
 				withLock: task => navigator.locks ? navigator.locks.request('valorant-team-shuffle-host', task) : task()
 			});
 			if (roomId) await manager.open(roomId);
@@ -404,7 +419,7 @@
 		else if (manager.state && !manager.state.pending) {
 			await refresh();
 			// ブラウザ時計では期限内でも、サーバーが期限切れと判定した場合に対応する。
-			if (manager.state.room.status === 'expired') {
+			if (!roomId && manager.state.room.status === 'expired') {
 				replacingExpired = true; render(); await replaceExpired();
 			}
 		}
