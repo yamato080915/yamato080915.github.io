@@ -48,34 +48,36 @@
 			</div>
 		</nav>
 	</header>
-		{% assign notifications = site.data.notifications %}
-		{% if notifications and notifications.size > 0 %}
-			{% assign notification = notifications | last %}
-			<div id="notification-modal" class="notification-modal hidden" role="dialog" aria-modal="true" aria-labelledby="notification-title" aria-describedby="notification-body" data-notification-id="{{ notification.id | escape }}">
-				<div class="notification-backdrop" data-notification-close></div>
-				<div class="notification-panel" role="document">
-					<div class="notification-header">
-						<p class="eyebrow">お知らせ</p>
-						<button type="button" class="close-button" aria-label="お知らせを閉じる" data-notification-close>
-							<i class="bi bi-x-lg" aria-hidden="true"></i>
-						</button>
-					</div>
-					<div class="notification-content">
-						<h2 id="notification-title" class="section-title">{{ notification.title | escape }}</h2>
-						<p id="notification-body" class="mt-4 whitespace-pre-line text-sm leading-7 text-slate-700">{{ notification.body | escape }}</p>
-						{% if notification.date %}
-							<p class="mt-4 text-xs text-slate-500">{{ notification.date | escape }}</p>
-						{% endif %}
-						{% if notification.url %}
-							<a class="button button-primary mt-6 w-full sm:w-auto" href="{{ notification.url | relative_url }}">{{ notification.url_label | default: '詳しく見る' | escape }}</a>
-						{% endif %}
-					</div>
-					<div class="notification-footer">
-						<button type="button" class="button button-secondary w-full sm:w-auto" data-notification-close>閉じる</button>
+	{% unless page.url == '/valorant/team-shuffle/register/' %}
+			{% assign notifications = site.data.notifications %}
+			{% if notifications and notifications.size > 0 %}
+				{% assign notification = notifications | last %}
+				<div id="notification-modal" class="notification-modal hidden" role="dialog" aria-modal="true" aria-labelledby="notification-title" aria-describedby="notification-body" data-notification-id="{{ notification.id | escape }}">
+					<div class="notification-backdrop" data-notification-close></div>
+					<div class="notification-panel" role="document">
+						<div class="notification-header">
+							<p class="eyebrow">お知らせ</p>
+							<button type="button" class="close-button" aria-label="お知らせを閉じる" data-notification-close>
+								<i class="bi bi-x-lg" aria-hidden="true"></i>
+							</button>
+						</div>
+						<div class="notification-content">
+							<h2 id="notification-title" class="section-title">{{ notification.title | escape }}</h2>
+							<p id="notification-body" class="mt-4 whitespace-pre-line text-sm leading-7 text-slate-700">{{ notification.body | escape }}</p>
+							{% if notification.date %}
+								<p class="mt-4 text-xs text-slate-500">{{ notification.date | escape }}</p>
+							{% endif %}
+							{% if notification.url %}
+								<a class="button button-primary mt-6 w-full sm:w-auto" href="{{ notification.url | relative_url }}">{{ notification.url_label | default: '詳しく見る' | escape }}</a>
+							{% endif %}
+						</div>
+						<div class="notification-footer">
+							<button type="button" class="button button-secondary w-full sm:w-auto" data-notification-close>閉じる</button>
+						</div>
 					</div>
 				</div>
-			</div>
-		{% endif %}
+			{% endif %}
+	{% endunless %}
 	<main class="site-shell flex-1 py-10 sm:py-14">
 		{{ content }}
 	</main>
