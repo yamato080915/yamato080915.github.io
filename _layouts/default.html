@@ -74,58 +74,6 @@
 			</nav>
 		</div>
 	</footer>
-	<script>
-		const allowedHosts = [
-			"tanzwalzer.com",
-			"www.tanzwalzer.com",
-			"localhost"
-		];
-		console.log("Current hostname:", location.hostname);
-		if (!allowedHosts.includes(location.hostname)) {
-			document.documentElement.innerHTML = `
-				<!DOCTYPE html>
-				<html lang="ja">
-				<head>
-					<meta charset="UTF-8">
-					<meta name="viewport" content="width=device-width, initial-scale=1">
-					<title>URL変更のお知らせ</title>
-					<style>
-						body {
-							font-family: sans-serif;
-							background: #111827;
-							color: white;
-							min-height: 100vh;
-							display: flex;
-							align-items: center;
-							justify-content: center;
-							text-align: center;
-							margin: 0;
-						}
-
-						.message {
-							padding: 30px;
-						}
-
-						a {
-							color: #60a5fa;
-						}
-					</style>
-				</head>
-				<body>
-					<div class="message">
-						<h1>URL変更のお知らせ</h1>
-						<p>当サイトのURLが変更されました。</p>
-						<p>5秒後に新しいURLへ移動します。</p>
-						<p>移動しない場合は、以下をクリックしてください。</p>
-						<a href="https://tanzwalzer.com/">
-							tanzwalzer.com
-						</a>
-					</div>
-				</body>
-				</html>
-			`;
-		}
-	</script>
 	<script src="{{ '/static/site.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
 </body>
 </html>
