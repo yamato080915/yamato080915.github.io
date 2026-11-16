@@ -80,7 +80,7 @@
 			"www.tanzwalzer.com",
 			"localhost"
 		];
-
+		console.log("Current hostname:", location.hostname);
 		if (!allowedHosts.includes(location.hostname)) {
 			document.documentElement.innerHTML = `
 				<!DOCTYPE html>
