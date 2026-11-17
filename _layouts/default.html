@@ -105,5 +105,13 @@
 		</div>
 	</footer>
 	<script src="{{ '/static/site.js' | relative_url }}?v={{ site.time | date: '%s' }}"></script>
+	<script>
+	const referrer = document.referrer;
+	if (referrer.includes('github.io')) {
+		console.log('旧ドメインからのリダイレクト経由でアクセスしました:', referrer);
+	} else {
+		console.log('独自ドメインへ直接（または他サイトから）アクセスしました');
+	}
+	</script>
 </body>
 </html>
