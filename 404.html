@@ -1,10 +1,27 @@
----
-permalink: /404.html
-layout: default
----
-
-<section class="mx-auto max-w-2xl py-16 text-center sm:py-24">
-	<h1 class="ratingf text-8xl text-brand-600">404</h1>
-	<p class="mt-6"><strong>Page not found :(</strong></p>
-	<p class="mt-4 leading-7 text-slate-600">The requested page could not be found.</p>
-</section>
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="refresh" content="5;url=https://tanzwalzer.com/">
+	<meta name="robots" content="noindex">
+	<title>URL変更のお知らせ</title>
+	<script>
+		window.setTimeout(() => window.location.replace("https://tanzwalzer.com/"), 5000);
+	</script>
+</head>
+<body>
+	<p>URLが変更されました。</p>
+	<p id="countdown">5秒で <a href="https://tanzwalzer.com/">tanzwalzer.com</a>へ移動します。</p>
+	<script>
+		let seconds = 5;
+		const countdown = document.getElementById("countdown");
+		const timer = window.setInterval(() => {
+			seconds -= 1;
+			countdown.innerHTML = `${seconds}秒で <a href="https://tanzwalzer.com/">tanzwalzer.com</a>へ移動します。`;
+			if (seconds === 0) {
+				window.clearInterval(timer);
+			}
+		}, 1000);
+	</script>
+</body>
+</html>

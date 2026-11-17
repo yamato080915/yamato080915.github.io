@@ -1,85 +1,27 @@
----
-layout: default
-title: Home
----
-
-<section class="grid gap-5 sm:grid-cols-2">
-	<a href="{{ '/valorant/tournament/' | relative_url }}" class="group panel p-6 hover:-translate-y-1 hover:border-valorant/40 hover:shadow-md">
-		<span class="grid size-11 place-items-center rounded-xl bg-red-50 text-xl text-valorant"><i class="bi bi-trophy" aria-hidden="true"></i></span>
-		<h2 class="mt-5 font-bold text-slate-950 group-hover:text-valorant-dark">VALORANT CUSTOM TOURNAMENT TOOL</h2>
-		<p class="mt-2 text-sm leading-6 text-slate-600">VALORANTカスタム大会を開催できます。</p>
-		<span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-valorant-dark">大会を開催<i class="bi bi-arrow-right" aria-hidden="true"></i></span>
-	</a>
-	<a href="{{ '/valorant/team-shuffle/' | relative_url }}" class="group panel p-6 hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-md">
-		<span class="grid size-11 place-items-center rounded-xl bg-brand-50 text-xl text-brand-600"><i class="bi bi-people" aria-hidden="true"></i></span>
-		<h2 class="mt-5 font-bold text-slate-950 group-hover:text-brand-700">VALORANTチーム分け</h2>
-		<p class="mt-2 text-sm leading-6 text-slate-600">VALORANTのチーム分けを簡単に行うことができます。</p>
-		<span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700">チーム分けをする<i class="bi bi-arrow-right" aria-hidden="true"></i></span>
-	</a>
-	<a href="{{ '/valorant/map-roulette/' | relative_url }}" class="group panel p-6 hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-md">
-		<span class="grid size-11 place-items-center rounded-xl bg-brand-50 text-xl text-brand-600"><i class="bi bi-shuffle" aria-hidden="true"></i></span>
-		<h2 class="mt-5 font-bold text-slate-950 group-hover:text-brand-700">VALORANTマップルーレット</h2>
-		<p class="mt-2 text-sm leading-6 text-slate-600">VALORANTのマップをランダムに選ぶことができます。</p>
-		<span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700">マップルーレット<i class="bi bi-arrow-right" aria-hidden="true"></i></span>
-	</a>
-	<a href="{{ '/valorant/ban-pick/' | relative_url }}" class="group panel p-6 hover:-translate-y-1 hover:border-brand-500/30 hover:shadow-md">
-		<span class="grid size-11 place-items-center rounded-xl bg-brand-50 text-xl text-brand-600"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
-		<h2 class="mt-5 font-bold text-slate-950 group-hover:text-brand-700">BO3, BO5 バンピック</h2>
-		<p class="mt-2 text-sm leading-6 text-slate-600">BO3やBO5形式でマップをピックすることができます。</p>
-		<span class="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-700">バンピック<i class="bi bi-arrow-right" aria-hidden="true"></i></span>
-	</a>
-</section>
-
-<section class="mt-14">
-	<h2 class="section-title mb-6 text-center">アカウント</h2>
-	<div class="grid gap-6 lg:grid-cols-2">
-		<article class="panel"><div class="panel-body">
-			<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="text-xl font-bold text-slate-950">AtCoder</h3><a href="https://atcoder.jp/users/yamato0915" target="_blank" rel="noopener noreferrer" class="button button-secondary button-sm">@yamato0915<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></div>
-			<div class="relative mt-5 flex min-h-24 items-center gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50 p-4" id="atcoder-div"><div class="ratingf min-w-20 text-center text-4xl" id="rating"></div><div class="min-w-16 text-center text-sm"><div class="font-semibold" id="place"></div><div class="mt-1 text-xs text-slate-500" id="diff"></div></div><div class="min-w-0 flex-1"><div class="text-xs text-slate-500" id="endtime"></div><div class="compressed-text mt-1 max-w-full font-semibold text-slate-800" id="contestname"></div></div><a id="atcoder-a" class="absolute inset-0 rounded-2xl"></a></div>
-			<div class="mt-5 aspect-video"><canvas id="ratingChart" width="800" height="450"></canvas></div>
-			<a href="{{ '/algo/history' | relative_url }}" class="mt-5 inline-flex items-center text-sm font-semibold text-brand-700 hover:underline">[コンテスト成績表]</a>
-		</div></article>
-		<article class="panel"><div class="panel-body">
-			<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="text-xl font-bold text-slate-950">OnlineMathContest</h3><a href="https://onlinemathcontest.com/users/yamato0915" target="_blank" rel="noopener noreferrer" class="button button-secondary button-sm">@yamato0915<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></div>
-			<div class="relative mt-5 flex min-h-24 items-center gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50 p-4" id="omc-div"><div class="ratingf min-w-20 text-center text-4xl" id="omcrating"></div><div class="min-w-16 text-center text-sm"><div class="font-semibold" id="omcplace"></div><div class="mt-1 text-xs text-slate-500" id="omcdiff"></div></div><div class="min-w-0 flex-1"><div class="text-xs text-slate-500" id="omcendtime"></div><div class="compressed-text mt-1 max-w-full font-semibold text-slate-800" id="omccontestname"></div></div><a id="omc-a" class="absolute inset-0 rounded-2xl"></a></div>
-			<div class="mt-5 aspect-video"><canvas id="omcRating" width="800" height="450"></canvas></div>
-			<a href="{{ '/omc/history' | relative_url }}" class="mt-5 inline-flex items-center text-sm font-semibold text-brand-700 hover:underline">[コンテスト成績表]</a>
-		</div></article>
-	</div>
-</section>
-
-<script>
-	fetch("https://yamato0915.xsrv.jp/api/atcoder/rating")
-	.then(response => response.json())
-	.then(data => {
-		const latest = data[data.length - 1];
-		document.getElementById("atcoder-div").classList.add(String(latest["Rank"]+"b"));
-		document.getElementById("rating").classList.add(latest["Rank"]);
-		document.getElementById("rating").innerText = latest["NewRating"];
-		document.getElementById("place").innerText = latest["Place"] + (String(latest["Place"]).slice(-1)=="1" ? "st" : (String(latest["Place"]).slice(-1)=="2" ? "nd" : (String(latest["Place"]).slice(-1)=="3" ? "rd" : "th")));
-		document.getElementById("diff").innerText = (latest["NewRating"] - latest["OldRating"]>0 ? "+" : (latest["NewRating"] - latest["OldRating"]==0 ? "±" : "")) + String(latest["NewRating"] - latest["OldRating"]);
-		document.getElementById("endtime").innerText = latest["EndTime"];
-		document.getElementById("contestname").innerText = latest["ContestName"];
-		document.getElementById("atcoder-a").setAttribute("href", "https://atcoder.jp/contests/" + String(latest["ContestScreenName"]).split(".")[0] + "/standings?watching=Yamato0915");
-	});
-	fetch("https://yamato0915.xsrv.jp/api/omc/rating")
-	.then(response => response.json())
-	.then(data => {
-		const latest = data[data.length - 1];
-		document.getElementById("omc-div").classList.add(String(latest["Rank"]+"b"));
-		document.getElementById("omcrating").classList.add(latest["Rank"]);
-		document.getElementById("omcrating").innerText = latest["NewRating"];
-		document.getElementById("omcplace").innerText = latest["Place"] + (String(latest["Place"]).slice(-1)=="1" ? "st" : (String(latest["Place"]).slice(-1)=="2" ? "nd" : (String(latest["Place"]).slice(-1)=="3" ? "rd" : "th")));
-		document.getElementById("omcdiff").innerText = (latest["NewRating"] - latest["OldRating"]>0 ? "+" : (latest["NewRating"] - latest["OldRating"]==0 ? "±" : "")) + String(latest["NewRating"] - latest["OldRating"]);
-		document.getElementById("omcendtime").innerText = latest["EndTime"];
-		document.getElementById("omccontestname").innerText = latest["ContestName"];
-		document.getElementById("omc-a").setAttribute("href", "https://onlinemathcontest.com/contests/" + String(latest["ContestScreenName"]).split(".")[0]);
-	});
-</script>
-	<script src="https://yamato0915.xsrv.jp/statics/js/chart.js?v={{ site.time | date: '%s' }}" defer></script>
-<script>
-	window.addEventListener("DOMContentLoaded", () => {
-		createRatingChart("https://yamato0915.xsrv.jp/api/atcoder/rating", "ratingChart", "rating", "place", "diff", "endtime", "contestname", "atcoder-a", "atcoder-div");
-		createRatingChart("https://yamato0915.xsrv.jp/api/omc/rating", "omcRating", "omcrating", "omcplace", "omcdiff", "omcendtime", "omccontestname", "omc-a", "omc-div");
-	});
-</script>
+<!doctype html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="refresh" content="5;url=https://tanzwalzer.com/">
+	<meta name="robots" content="noindex">
+	<title>URL変更のお知らせ</title>
+	<script>
+		window.setTimeout(() => window.location.replace("https://tanzwalzer.com/"), 5000);
+	</script>
+</head>
+<body>
+	<p>URLが変更されました。</p>
+	<p id="countdown">5秒で <a href="https://tanzwalzer.com/">tanzwalzer.com</a>へ移動します。</p>
+	<script>
+		let seconds = 5;
+		const countdown = document.getElementById("countdown");
+		const timer = window.setInterval(() => {
+			seconds -= 1;
+			countdown.innerHTML = `${seconds}秒で <a href="https://tanzwalzer.com/">tanzwalzer.com</a>へ移動します。`;
+			if (seconds === 0) {
+				window.clearInterval(timer);
+			}
+		}, 1000);
+	</script>
+</body>
+</html>
