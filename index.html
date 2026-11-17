@@ -6,7 +6,9 @@
 	<meta name="robots" content="noindex">
 	<title>URL変更のお知らせ</title>
 	<script>
-		window.setTimeout(() => window.location.replace("https://tanzwalzer.com/"), 5000);
+		const destination = `https://tanzwalzer.com${window.location.pathname}${window.location.search}${window.location.hash}`;
+		document.querySelector('meta[http-equiv="refresh"]').setAttribute("content", `5;url=${destination}`);
+		window.setTimeout(() => window.location.replace(destination), 5000);
 	</script>
 </head>
 <body>
@@ -15,9 +17,11 @@
 	<script>
 		let seconds = 5;
 		const countdown = document.getElementById("countdown");
+		const destinationLink = countdown.querySelector("a");
+		destinationLink.href = destination;
 		const timer = window.setInterval(() => {
 			seconds -= 1;
-			countdown.innerHTML = `${seconds}秒で <a href="https://tanzwalzer.com/">tanzwalzer.com</a>へ移動します。`;
+			countdown.innerHTML = `${seconds}秒で <a href="${destination}">tanzwalzer.com</a>へ移動します。`;
 			if (seconds === 0) {
 				window.clearInterval(timer);
 			}
