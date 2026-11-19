@@ -2,8 +2,8 @@
 	"use strict";
 
 	const SCHEMA_VERSION = 1;
-	const INDEX_KEY = "valorant.tournaments.index.v1";
-	const EVENT_PREFIX = "valorant.tournament.v1.";
+	const INDEX_KEY = "tournaments.index.v1";
+	const EVENT_PREFIX = "tournament.v1.";
 	const POWER_COUNTS = [2, 4, 8, 16, 32];
 
 	const dashboardScreen = document.getElementById("dashboard-screen");

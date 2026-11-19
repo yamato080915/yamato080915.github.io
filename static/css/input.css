@@ -2,7 +2,7 @@
 @source not "../../_site";
 @source not "../../node_modules";
 @source not "../../.jekyll-cache";
-@import "../../valorant/static/css/tournament.css";
+@import "../../static/css/tournament.css";
 @import "../../valorant/static/css/map-roulette.css";
 @import "../../valorant/static/css/ban-pick.css";
 

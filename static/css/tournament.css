@@ -1,7 +1,7 @@
 .tournament-app {
-	--valorant-red: #ff4655;
-	--valorant-ink: #101823;
-	--valorant-blue: #0f8fa8;
+	--tournament-accent: #2563eb;
+	--tournament-ink: #101823;
+	--tournament-blue: #0284c7;
 	--panel-border: rgba(16, 24, 35, 0.12);
 }
 
@@ -15,8 +15,8 @@
 	padding: 2rem;
 	border-radius: 1rem;
 	background:
-		linear-gradient(115deg, rgba(16, 24, 35, 0.98), rgba(25, 50, 65, 0.92)),
-		radial-gradient(circle at 80% 20%, rgba(255, 70, 85, 0.8), transparent 38%);
+		linear-gradient(115deg, rgba(16, 24, 35, 0.98), rgba(30, 64, 175, 0.92)),
+		radial-gradient(circle at 80% 20%, rgba(37, 99, 235, 0.8), transparent 38%);
 	color: #fff;
 	box-shadow: 0 1rem 2.5rem rgba(16, 24, 35, 0.18);
 }
@@ -29,7 +29,7 @@
 	width: 310px;
 	height: 390px;
 	transform: rotate(22deg);
-	border: 34px solid rgba(255, 70, 85, 0.25);
+	border: 34px solid rgba(37, 99, 235, 0.25);
 }
 
 .tournament-eyebrow,
@@ -37,7 +37,7 @@
 	font-size: 0.72rem;
 	font-weight: 800;
 	letter-spacing: 0.16em;
-	color: var(--valorant-red);
+	color: var(--tournament-accent);
 }
 
 .hero-mark {
@@ -45,7 +45,7 @@
 	z-index: 1;
 	font-size: 5rem;
 	line-height: 1;
-	color: var(--valorant-red);
+	color: var(--tournament-accent);
 	filter: drop-shadow(0 0.6rem 1.4rem rgba(0, 0, 0, 0.3));
 }
 
@@ -61,7 +61,7 @@
 .saved-event-card {
 	height: 100%;
 	border: 1px solid var(--panel-border);
-	border-left: 4px solid var(--valorant-red);
+	border-left: 4px solid var(--tournament-accent);
 	border-radius: 0.85rem;
 	transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -93,7 +93,7 @@
 
 .phase-banner {
 	padding: 1.25rem 1.5rem;
-	border-left: 5px solid var(--valorant-blue);
+	border-left: 5px solid var(--tournament-blue);
 	border-radius: 0.75rem;
 	background: linear-gradient(110deg, rgba(15, 143, 168, 0.1), rgba(15, 143, 168, 0.02));
 }
@@ -144,13 +144,13 @@
 }
 
 .draggable-team.drag-over {
-	border-color: var(--valorant-red);
-	background: rgba(255, 70, 85, 0.08);
-	box-shadow: 0 0 0 0.22rem rgba(255, 70, 85, 0.13);
+	border-color: var(--tournament-accent);
+	background: rgba(37, 99, 235, 0.08);
+	box-shadow: 0 0 0 0.22rem rgba(37, 99, 235, 0.13);
 }
 
 .draggable-team.swap-selected {
-	border-color: var(--valorant-blue);
+	border-color: var(--tournament-blue);
 	background: rgba(15, 143, 168, 0.09);
 	box-shadow: 0 0 0 0.22rem rgba(15, 143, 168, 0.14);
 }
@@ -183,7 +183,7 @@
 	height: 2.4rem;
 	flex: 0 0 2.4rem;
 	border-radius: 50%;
-	background: var(--valorant-blue);
+	background: var(--tournament-blue);
 	color: #fff;
 }
 
@@ -215,7 +215,7 @@
 	margin-bottom: 0.65rem;
 	padding: 0.45rem 0.7rem;
 	border-radius: 0.45rem;
-	background: var(--valorant-ink);
+	background: var(--tournament-ink);
 	color: #fff;
 	font-size: 0.78rem;
 	font-weight: 700;
@@ -352,7 +352,7 @@
 	width: 36px;
 	height: 36px;
 	border-radius: 0.45rem;
-	background: var(--valorant-ink);
+	background: var(--tournament-ink);
 	color: #fff;
 	font-size: 0.78rem;
 	font-weight: 700;
