@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- レコード盤（黒バイナル） -->
+  <circle cx="32" cy="32" r="30" fill="#1A1817"/>
+  <!-- 盤面の光の反射ハイライト -->
+  <path d="M 32 32 L 9.0 12.7 A 30 30 0 0 1 24.2 3.0 Z" fill="#FFFFFF" fill-opacity="0.09"/>
+  <path d="M 32 32 L 55.0 51.3 A 30 30 0 0 1 39.8 61.0 Z" fill="#FFFFFF" fill-opacity="0.09"/>
+  <!-- レコードの音溝 -->
+  <circle cx="32" cy="32" r="26.5" fill="none" stroke="#FFFFFF" stroke-width="0.9" stroke-opacity="0.16"/>
+  <circle cx="32" cy="32" r="23.5" fill="none" stroke="#FFFFFF" stroke-width="0.9" stroke-opacity="0.14"/>
+
+  <!-- センターラベル（深紅＋ゴールドの縁取り） -->
+  <circle cx="32" cy="32" r="20" fill="#8B1E24" stroke="#E5C168" stroke-width="1.5"/>
+
+  <!-- qrL ロゴ（ベクターパス） -->
+  <g transform="translate(0 2)" fill="none" stroke="#FAF3E3" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- q -->
+    <circle cx="21.5" cy="30.5" r="4.2"/>
+    <line x1="25.7" y1="26.5" x2="25.7" y2="40.5"/>
+    <!-- r -->
+    <line x1="30.5" y1="26.3" x2="30.5" y2="34.7"/>
+    <path d="M 30.5 29.8 Q 31.2 26.3 35.2 26.5"/>
+    <!-- L -->
+    <path d="M 40.0 22.5 V 34.7 H 46.5"/>
+  </g>
+</svg>
