@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 610 136" width="610" height="136" role="img" aria-label="tanzwalzer.com full logo with extended arrow interval">
+  <defs>
+    <!-- 矢印の軌道（非表示：定義のみ） -->
+    <path id="riverLoopPath" pathLength="1000"
+          d="M 106 93 L 106 42 C 106 22, 88 16, 66 16 C 34 16, 18 38, 18 68 C 18 96, 36 112, 72 112 L 592 112" />
+
+    <!-- 右端（x=592）で綺麗に抜けて消えるためのクリップ -->
+    <clipPath id="riverExitClip">
+      <rect x="0" y="0" width="592" height="136" />
+    </clipPath>
+  </defs>
+
+  <!-- いただいた The qrL ロゴ（矢印以外の5文字本体） -->
+  <g transform="translate(72, 70) scale(0.082) translate(-476.5, -495.5)" fill="#18191D">
+    <path d="M 35,105 L 348,125 L 348,195 L 238,188 L 238,555 L 138,555 L 138,182 L 35,175 Z" />
+    <path d="M 360,126 L 438,131 L 438,262 C 462,236 494,224 528,226 C 576,229 600,262 600,320 L 600,590 C 616,564 644,550 678,550 L 684,550 L 684,612 L 674,612 C 628,612 600,642 600,694 L 600,792 L 526,796 L 526,334 C 526,298 508,284 484,284 C 460,284 438,302 438,338 L 438,555 L 360,555 Z" />
+    <path fill-rule="evenodd" d="M 708,238 C 770,242 804,288 804,370 L 804,412 L 670,412 C 672,454 694,476 726,476 C 752,476 768,464 778,446 L 802,488 C 782,518 750,534 712,534 C 646,534 612,482 612,384 C 612,290 650,234 708,238 Z M 670,364 L 748,364 C 746,320 730,296 710,296 C 688,296 672,320 670,364 Z" />
+    <path fill-rule="evenodd" d="M 426,568 L 504,568 L 504,882 L 426,886 L 426,774 C 402,794 372,804 338,802 C 262,798 218,740 218,672 C 218,600 268,554 344,558 C 376,560 404,572 426,592 Z M 358,622 C 322,622 298,644 298,678 C 298,714 322,736 358,736 C 396,736 426,714 426,678 C 426,642 396,622 358,622 Z" />
+    <path d="M 696,554 L 758,554 L 758,734 L 826,732 L 826,782 L 696,786 Z" />
+  </g>
+
+  <!-- 川沿いのアニメーション一式（2.0秒間隔／4.0秒サイクル） -->
+  <g clip-path="url(#riverExitClip)">
+    <!-- tanzwalzerの下に伸びて残る直線ライン（1本目が描き、2本目が左から消す） -->
+    <line x1="124" y1="112" x2="592" y2="112" pathLength="468"
+          stroke="#D93B30" stroke-width="4" stroke-linecap="butt"
+          stroke-dasharray="468 1000" stroke-dashoffset="468">
+      <animate attributeName="stroke-dashoffset"
+               values="468;468;0;0;-9;-468;-468;468;468"
+               keyTimes="0;0.1367;0.3396;0.632;0.6367;0.8357;0.837;0.84;1"
+               calcMode="linear" dur="4.0s" repeatCount="indefinite" />
+      <animate attributeName="opacity"
+               values="0;0;1;1;0;0"
+               keyTimes="0;0.1362;0.1367;0.8357;0.8365;1"
+               calcMode="linear" dur="4.0s" repeatCount="indefinite" />
+    </line>
+
+    <!-- 1本目（描く矢印）：出現〜周回〜直進まで完全等速 -->
+    <use href="#riverLoopPath" fill="none" stroke="#D93B30" stroke-width="4" stroke-linecap="butt"
+         stroke-dasharray="60 1200" stroke-dashoffset="60">
+      <animate attributeName="stroke-dashoffset"
+               values="60;-1000;-1000"
+               keyTimes="0;0.36;1"
+               calcMode="linear" dur="4.0s" begin="0s" repeatCount="indefinite" />
+    </use>
+    <polygon points="6,0 -2,-5.2 -0.2,0 -2,5.2" fill="#D93B30">
+      <animateMotion dur="4.0s" begin="0s" repeatCount="indefinite" rotate="auto" calcMode="linear"
+                     keyPoints="0;1;1"
+                     keyTimes="0;0.3396;1">
+        <mpath href="#riverLoopPath" />
+      </animateMotion>
+      <animate attributeName="opacity"
+               values="0;1;1;0;0"
+               keyTimes="0;0.012;0.332;0.344;1"
+               dur="4.0s" begin="0s" repeatCount="indefinite" />
+    </polygon>
+
+    <!-- 2本目（消す矢印）：2.0秒後に出現 -->
+    <use href="#riverLoopPath" fill="none" stroke="#D93B30" stroke-width="4" stroke-linecap="butt"
+         stroke-dasharray="60 1200" stroke-dashoffset="60">
+      <animate attributeName="stroke-dashoffset"
+               values="60;-1000;-1000"
+               keyTimes="0;0.36;1"
+               calcMode="linear" dur="4.0s" begin="-2.0s" repeatCount="indefinite" />
+    </use>
+    <polygon points="6,0 -2,-5.2 -0.2,0 -2,5.2" fill="#D93B30">
+      <animateMotion dur="4.0s" begin="-2.0s" repeatCount="indefinite" rotate="auto" calcMode="linear"
+                     keyPoints="0;1;1"
+                     keyTimes="0;0.3396;1">
+        <mpath href="#riverLoopPath" />
+      </animateMotion>
+      <animate attributeName="opacity"
+               values="0;1;1;0;0"
+               keyTimes="0;0.012;0.332;0.344;1"
+               dur="4.0s" begin="-2.0s" repeatCount="indefinite" />
+    </polygon>
+  </g>
+
+  <!-- 右側：tanzwalzer.com -->
+  <g transform="translate(-30, 0)">
+    <g fill="#18191D" fill-rule="evenodd">
+      <!-- t -->
+      <rect x="154" y="60" width="23" height="7.5" rx="1.2" />
+      <path d="M 161 46 H 169.5 V 84 Q 169.5 90.5 175.5 90.5 H 178 V 98 H 173 Q 161 98 161 84 Z" />
+      <!-- a -->
+      <path d="M 188 70 C 188 63, 194 59.5, 202.5 59.5 C 212 59.5, 217 64.5, 217 73 V 91.5 C 217 93.5, 218.5 94, 220 94 V 98 H 210.5 L 209.5 94.5 C 206.5 97.5, 202 98.5, 197 98.5 C 189.5 98.5, 185 94, 185 87.5 C 185 80, 191.5 77, 202 75.5 L 209 74.5 V 72.5 C 209 68, 206.5 66, 202 66 C 197.5 66, 195.5 68, 195 70.5 Z M 209 80 L 202.5 81 C 196.5 82, 193.5 83.5, 193.5 87.2 C 193.5 90.5, 196 92.2, 200 92.2 C 205 92.2, 209 89.5, 209 85 Z" />
+      <!-- n -->
+      <path d="M 227 60 H 235 V 65 C 238 61.5, 242 59.5, 247 59.5 C 255 59.5, 260 64.5, 260 73 V 98 H 251.5 V 74 C 251.5 69, 249 66.5, 244.5 66.5 C 239.5 66.5, 235.5 70, 235.5 75.5 V 98 H 227 Z" />
+      <!-- z -->
+      <path d="M 268 60 H 297 V 66.8 L 277.5 91 H 297.5 V 98 H 267 V 91.2 L 286.5 67 H 268 Z" />
+      <!-- w -->
+      <path d="M 303 60 H 311.8 L 318.2 86 L 324.5 60 H 331.5 L 337.8 86 L 344.2 60 H 353 L 342.5 98 H 334 L 328 73.5 L 322 98 H 313.5 Z" />
+      <!-- a -->
+      <path d="M 361 70 C 361 63, 367 59.5, 375.5 59.5 C 385 59.5, 390 64.5, 390 73 V 91.5 C 390 93.5, 391.5 94, 393 94 V 98 H 383.5 L 382.5 94.5 C 379.5 97.5, 375 98.5, 370 98.5 C 362.5 98.5, 358 94, 358 87.5 C 358 80, 364.5 77, 375 75.5 L 382 74.5 V 72.5 C 382 68, 379.5 66, 375 66 C 370.5 66, 368.5 68, 368 70.5 Z M 382 80 L 375.5 81 C 369.5 82, 366.5 83.5, 366.5 87.2 C 366.5 90.5, 369 92.2, 373 92.2 C 378 92.2, 382 89.5, 382 85 Z" />
+      <!-- l -->
+      <rect x="401" y="44" width="8.5" height="54" rx="1" />
+      <!-- z -->
+      <path d="M 419 60 H 448 V 66.8 L 428.5 91 H 448.5 V 98 H 418 V 91.2 L 437.5 67 H 419 Z" />
+      <!-- e -->
+      <path d="M 490 81 H 463.5 C 463.8 88.2, 467.2 91.8, 473.5 91.8 C 478 91.8, 480.8 89.8, 482.2 86.8 L 489.5 89 C 487.2 95.2, 481.2 98.5, 473 98.5 C 462 98.5, 455 90.8, 455 79 C 455 67.2, 462 59.5, 472.8 59.5 C 483.5 59.5, 490 67, 490 78 Z M 481.5 74.5 C 481 69, 478 66, 472.8 66 C 467.5 66, 464.2 69.2, 463.7 74.5 Z" />
+      <!-- r -->
+      <path d="M 498 60 H 506 V 65.5 C 508.5 61.5, 512.5 59.5, 518.5 59.5 H 520.5 V 67.5 H 517.5 C 511 67.5, 506.5 70.5, 506.5 77 V 98 H 498 Z" />
+    </g>
+
+    <!-- .com バッジ -->
+    <g>
+      <rect x="526" y="66" width="72" height="32" rx="4" fill="#D93B30" />
+      <circle cx="535" cy="87.5" r="2.1" fill="#FAF4E6" />
+      <g fill="none" stroke="#FAF4E6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 550 76.8 A 6.2 6.2 0 1 0 550 86.8" />
+        <circle cx="561" cy="81.8" r="5.6" />
+        <path d="M 572 87.5 V 75.8 M 572 80.5 A 4.6 4.6 0 0 1 581.2 80.5 V 87.5 M 581.2 80.5 A 4.6 4.6 0 0 1 590.4 80.5 V 87.5" />
+      </g>
+    </g>
+  </g>
+</svg>
