@@ -621,6 +621,47 @@
 				this.save();
 			});
 		}
+		moveTeamMember(fromTeamIndex, participantId, toTeamIndex, targetParticipantId = null) {
+			return this.run(async () => {
+				await this.settlePending();
+				if (!this.state.lastTeams || this.state.pending) throw new Error('現在はメンバーを入れ替えできません。');
+				if (!Number.isInteger(fromTeamIndex) || !Number.isInteger(toTeamIndex)
+					|| fromTeamIndex < 0 || fromTeamIndex >= this.state.lastTeams.length
+					|| toTeamIndex < 0 || toTeamIndex >= this.state.lastTeams.length
+					|| !isId(participantId)) throw new Error('入れ替え先の指定が不正です。');
+
+				const teams = clone(this.state.lastTeams);
+				const sourceTeam = teams[fromTeamIndex];
+				const sourceIndex = sourceTeam.members.findIndex(member => member.id === participantId);
+				if (sourceIndex === -1) throw new Error('移動元のメンバーが見つかりません。');
+
+				if (fromTeamIndex === toTeamIndex) {
+					if (!targetParticipantId) throw new Error('同じチーム内では移動先のメンバーを指定してください。');
+					const targetIndex = sourceTeam.members.findIndex(member => member.id === targetParticipantId);
+					if (targetIndex === -1) throw new Error('移動先のメンバーが見つかりません。');
+					[sourceTeam.members[sourceIndex], sourceTeam.members[targetIndex]] =
+						[sourceTeam.members[targetIndex], sourceTeam.members[sourceIndex]];
+				} else {
+					const targetTeam = teams[toTeamIndex];
+					if (targetParticipantId) {
+						const targetIndex = targetTeam.members.findIndex(member => member.id === targetParticipantId);
+						if (targetIndex === -1) throw new Error('移動先のメンバーが見つかりません。');
+						[targetTeam.members[targetIndex], sourceTeam.members[sourceIndex]] =
+							[sourceTeam.members[sourceIndex], targetTeam.members[targetIndex]];
+					} else {
+						if (targetTeam.vacancies < 1) throw new Error('移動先のチームに空き枠がありません。メンバー同士をドロップしてください。');
+						const [moved] = sourceTeam.members.splice(sourceIndex, 1);
+						targetTeam.members.push(moved);
+						targetTeam.vacancies -= 1;
+						sourceTeam.vacancies += 1;
+					}
+				}
+
+				for (const team of teams) team.totalPoints = team.members.reduce((total, member) => total + member.point, 0);
+				const activeIds = teams.flatMap(team => team.members.map(member => member.id));
+				await this.commit(teams, activeIds);
+			});
+		}
 		decideMap() {
 			return this.run(async () => {
 				const selection = this.state.room.mapSelection;

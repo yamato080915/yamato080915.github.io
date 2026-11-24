@@ -30,6 +30,10 @@
 .shuffle-rank-icon { width: 1.35rem; height: 1.35rem; flex: 0 0 auto; object-fit: contain; }
 .shuffle-rank-icon-radiant { padding: .08rem; border-radius: 999px; background: #334155; filter: drop-shadow(0 1px 1px rgb(15 23 42 / .35)); }
 .shuffle-person button { flex-shrink: 0; }
+.shuffle-drag-person { cursor: grab; }
+.shuffle-drag-person:active { cursor: grabbing; }
+.shuffle-dragging { opacity: .45; }
+.shuffle-drag-over { outline: 2px dashed #2563eb; outline-offset: 2px; border-radius: .5rem; }
 .shuffle-empty { padding: 1.25rem; color: #64748b; font-size: .875rem; }
 .shuffle-register { max-width: 72rem; margin-inline: auto; }
 .shuffle-register-form-panel { width: 100%; max-width: 34rem; margin-inline: auto; }

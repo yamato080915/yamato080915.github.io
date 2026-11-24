@@ -131,8 +131,14 @@
 		badge.append(element('span', '', label));
 		return badge;
 	}
-	function person(p, inTeam = false) {
+	function person(p, inTeam = false, teamIndex = null) {
 		const row = element('li', 'list-item shuffle-person');
+		if (inTeam && teamIndex !== null && manager.api.accessToken) {
+			row.draggable = true;
+			row.dataset.teamIndex = String(teamIndex);
+			row.dataset.participantId = p.id;
+			row.classList.add('shuffle-drag-person');
+		}
 		const info = element('div', 'shuffle-person-info');
 		info.append(element('strong', '', p.name));
 		const badges = element('div', 'shuffle-person-badges');
@@ -163,6 +169,54 @@
 		if (!players.length) node.append(element('li', 'shuffle-empty', empty));
 	}
 	function mapImage(map) { return `linear-gradient(rgb(15 23 42 / .45), rgb(15 23 42 / .45)), url('/valorant/static/pictures/${map}.png')`; }
+	function setupTeamDragAndDrop() {
+		if (!manager.api.accessToken) return;
+		let dragged = null;
+		document.querySelectorAll('.shuffle-drag-person').forEach(row => {
+			row.addEventListener('dragstart', event => {
+				if (busy || manager.state.pending) {
+					event.preventDefault();
+					return;
+				}
+				dragged = {
+					teamIndex: Number(row.dataset.teamIndex),
+					participantId: row.dataset.participantId
+				};
+				row.classList.add('shuffle-dragging');
+				event.dataTransfer.effectAllowed = 'move';
+				event.dataTransfer.setData('text/plain', dragged.participantId);
+			});
+			row.addEventListener('dragend', () => {
+				row.classList.remove('shuffle-dragging');
+				document.querySelectorAll('.shuffle-drag-over').forEach(el => el.classList.remove('shuffle-drag-over'));
+				dragged = null;
+			});
+		});
+		document.querySelectorAll('[data-drop-team-index]').forEach(target => {
+			target.addEventListener('dragover', event => {
+				if (!dragged) return;
+				event.preventDefault();
+				event.dataTransfer.dropEffect = 'move';
+				target.classList.add('shuffle-drag-over');
+			});
+			target.addEventListener('dragleave', event => {
+				if (!target.contains(event.relatedTarget)) target.classList.remove('shuffle-drag-over');
+			});
+			target.addEventListener('drop', event => {
+				event.preventDefault();
+				target.classList.remove('shuffle-drag-over');
+				if (!dragged) return;
+				const source = dragged;
+				dragged = null;
+				const toTeamIndex = Number(target.dataset.dropTeamIndex);
+				const targetParticipantId = target.dataset.dropParticipantId || null;
+				perform(
+					() => manager.moveTeamMember(source.teamIndex, source.participantId, toTeamIndex, targetParticipantId),
+					'メンバーの入れ替えを保存しています…'
+				);
+			});
+		});
+	}
 	function renderMapDecision(s) {
 		const panel = $('map-decision-panel'), listNode = $('team-map-preference-list'), selection = s.room.mapSelection;
 		listNode.replaceChildren();
@@ -274,11 +328,18 @@
 				);
 				header.append(teamControls);
 				const members = element('ul', 'list');
-				members.append(...team.members.map(p => person(p, true)));
+				members.dataset.dropTeamIndex = String(index);
+				members.append(...team.members.map(p => {
+					const row = person(p, true, index);
+					row.dataset.dropTeamIndex = String(index);
+					row.dataset.dropParticipantId = p.id;
+					return row;
+				}));
 				if (team.vacancies) members.append(element('li', 'shuffle-empty', '空き枠: ' + team.vacancies + '人'));
 				panel.append(header, members); $('result').append(panel);
 			});
 			renderMapDecision(s);
+			setupTeamDragAndDrop();
 		}
 		controls();
 	}
