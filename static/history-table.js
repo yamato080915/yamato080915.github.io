@@ -22,6 +22,7 @@ function tabler(type) {
 	fetch("https://yamato0915.xsrv.jp/api/" + type + "/rating")
 	.then(response => response.json())
 	.then(data => {
+		document.getElementById("history-loading-row")?.remove();
 		if (type === "atcoder") {
 			const th = document.createElement("th");
 			th.scope = "col";
@@ -52,5 +53,11 @@ function tabler(type) {
 			`
 			tbody.appendChild(tr)
 		};
+	})
+	.catch(() => {
+		const loadingRow = document.getElementById("history-loading-row");
+		if (loadingRow) {
+			loadingRow.innerHTML = '<td colspan="6" class="loading-table-cell">コンテスト成績を取得できませんでした。</td>';
+		}
 	});
 };

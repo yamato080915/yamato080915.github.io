@@ -13,7 +13,7 @@ css:
 			<span id="registration-editor-action" class="badge badge-neutral">入力してください</span>
 		</summary>
 		<div class="panel-body">
-			<p id="registration-room" class="field-help shuffle-block">募集を確認しています。</p>
+			<p id="registration-room" class="field-help shuffle-block" role="status" aria-live="polite"><span class="loading-inline"><img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true"><span>募集を確認しています…</span></span></p>
 			<form id="registration-form">
 				<fieldset id="registration-fields" class="shuffle-fields" disabled>
 					<div><label class="field-label" for="p-name">表示名</label><input id="p-name" class="field-control" type="text" maxlength="80" autocomplete="nickname" required></div>

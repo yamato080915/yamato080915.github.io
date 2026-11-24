@@ -132,6 +132,13 @@
 	.notification-content { @apply px-5 py-5 sm:px-6 sm:py-6; }
 	.notification-footer { @apply flex justify-end border-t border-slate-200 bg-slate-50 px-5 py-4 sm:px-6; }
 	.sr-only { @apply absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0 [clip:rect(0,0,0,0)]; }
+	.loading-inline { @apply inline-flex items-center gap-2 text-sm text-slate-500; }
+	.loading-inline img { @apply size-8 shrink-0; }
+	.loading-block { @apply flex min-h-24 items-center justify-center gap-3; }
+	.loading-block img { @apply size-12; }
+	.loading-table-cell { @apply text-center text-slate-500; }
+	.loading-card { @apply flex min-h-24 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm text-slate-500; }
+	.loading-card img { @apply size-10 shrink-0; }
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {

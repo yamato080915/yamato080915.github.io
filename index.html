@@ -48,13 +48,13 @@ title: Home
 	<div class="grid gap-6 lg:grid-cols-2">
 		<article class="panel"><div class="panel-body">
 			<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="text-xl font-bold text-slate-950">AtCoder</h3><a href="https://atcoder.jp/users/yamato0915" target="_blank" rel="noopener noreferrer" class="button button-secondary button-sm">@yamato0915<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></div>
-			<div class="relative mt-5 flex min-h-24 items-center gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50 p-4" id="atcoder-div"><div class="ratingf min-w-20 text-center text-4xl" id="rating"></div><div class="min-w-16 text-center text-sm"><div class="font-semibold" id="place"></div><div class="mt-1 text-xs text-slate-500" id="diff"></div></div><div class="min-w-0 flex-1"><div class="text-xs text-slate-500" id="endtime"></div><div class="compressed-text mt-1 max-w-full font-semibold text-slate-800" id="contestname"></div></div><a id="atcoder-a" class="absolute inset-0 rounded-2xl"></a></div>
+			<div class="relative mt-5 flex min-h-24 items-center gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50 p-4" id="atcoder-div"><div class="loading-card w-full" id="atcoder-loading" role="status" aria-live="polite"><img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true"><span>成績を取得しています…</span></div><div class="ratingf min-w-20 text-center text-4xl" id="rating"></div><div class="min-w-16 text-center text-sm"><div class="font-semibold" id="place"></div><div class="mt-1 text-xs text-slate-500" id="diff"></div></div><div class="min-w-0 flex-1"><div class="text-xs text-slate-500" id="endtime"></div><div class="compressed-text mt-1 max-w-full font-semibold text-slate-800" id="contestname"></div></div><a id="atcoder-a" class="absolute inset-0 rounded-2xl"></a></div>
 			<div class="mt-5 aspect-video"><canvas id="ratingChart" width="800" height="450"></canvas></div>
 			<a href="{{ '/algo/history' | relative_url }}" class="mt-5 inline-flex items-center text-sm font-semibold text-brand-700 hover:underline">[コンテスト成績表]</a>
 		</div></article>
 		<article class="panel"><div class="panel-body">
 			<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="text-xl font-bold text-slate-950">OnlineMathContest</h3><a href="https://onlinemathcontest.com/users/yamato0915" target="_blank" rel="noopener noreferrer" class="button button-secondary button-sm">@yamato0915<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></div>
-			<div class="relative mt-5 flex min-h-24 items-center gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50 p-4" id="omc-div"><div class="ratingf min-w-20 text-center text-4xl" id="omcrating"></div><div class="min-w-16 text-center text-sm"><div class="font-semibold" id="omcplace"></div><div class="mt-1 text-xs text-slate-500" id="omcdiff"></div></div><div class="min-w-0 flex-1"><div class="text-xs text-slate-500" id="omcendtime"></div><div class="compressed-text mt-1 max-w-full font-semibold text-slate-800" id="omccontestname"></div></div><a id="omc-a" class="absolute inset-0 rounded-2xl"></a></div>
+			<div class="relative mt-5 flex min-h-24 items-center gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50 p-4" id="omc-div"><div class="loading-card w-full" id="omc-loading" role="status" aria-live="polite"><img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true"><span>成績を取得しています…</span></div><div class="ratingf min-w-20 text-center text-4xl" id="omcrating"></div><div class="min-w-16 text-center text-sm"><div class="font-semibold" id="omcplace"></div><div class="mt-1 text-xs text-slate-500" id="omcdiff"></div></div><div class="min-w-0 flex-1"><div class="text-xs text-slate-500" id="omcendtime"></div><div class="compressed-text mt-1 max-w-full font-semibold text-slate-800" id="omccontestname"></div></div><a id="omc-a" class="absolute inset-0 rounded-2xl"></a></div>
 			<div class="mt-5 aspect-video"><canvas id="omcRating" width="800" height="450"></canvas></div>
 			<a href="{{ '/omc/history' | relative_url }}" class="mt-5 inline-flex items-center text-sm font-semibold text-brand-700 hover:underline">[コンテスト成績表]</a>
 		</div></article>
@@ -62,9 +62,21 @@ title: Home
 </section>
 
 <script>
+	const atcoderLoading = document.getElementById("atcoder-loading");
+	const omcLoading = document.getElementById("omc-loading");
+	["rating", "place", "diff", "endtime", "contestname", "atcoder-a"].forEach(id => {
+		document.getElementById(id)?.setAttribute("hidden", "");
+	});
+	["omcrating", "omcplace", "omcdiff", "omcendtime", "omccontestname", "omc-a"].forEach(id => {
+		document.getElementById(id)?.setAttribute("hidden", "");
+	});
 	fetch("https://yamato0915.xsrv.jp/api/atcoder/rating")
 	.then(response => response.json())
 	.then(data => {
+		atcoderLoading?.remove();
+		["rating", "place", "diff", "endtime", "contestname", "atcoder-a"].forEach(id => {
+			document.getElementById(id)?.removeAttribute("hidden");
+		});
 		const latest = data[data.length - 1];
 		document.getElementById("atcoder-div").classList.add(String(latest["Rank"]+"b"));
 		document.getElementById("rating").classList.add(latest["Rank"]);
@@ -74,10 +86,20 @@ title: Home
 		document.getElementById("endtime").innerText = latest["EndTime"];
 		document.getElementById("contestname").innerText = latest["ContestName"];
 		document.getElementById("atcoder-a").setAttribute("href", "https://atcoder.jp/contests/" + String(latest["ContestScreenName"]).split(".")[0] + "/standings?watching=Yamato0915");
+	})
+	.catch(() => {
+		if (atcoderLoading) {
+			atcoderLoading.innerHTML = '<span>成績を取得できませんでした</span>';
+			atcoderLoading.removeAttribute("role");
+		}
 	});
 	fetch("https://yamato0915.xsrv.jp/api/omc/rating")
 	.then(response => response.json())
 	.then(data => {
+		omcLoading?.remove();
+		["omcrating", "omcplace", "omcdiff", "omcendtime", "omccontestname", "omc-a"].forEach(id => {
+			document.getElementById(id)?.removeAttribute("hidden");
+		});
 		const latest = data[data.length - 1];
 		document.getElementById("omc-div").classList.add(String(latest["Rank"]+"b"));
 		document.getElementById("omcrating").classList.add(latest["Rank"]);
@@ -87,6 +109,12 @@ title: Home
 		document.getElementById("omcendtime").innerText = latest["EndTime"];
 		document.getElementById("omccontestname").innerText = latest["ContestName"];
 		document.getElementById("omc-a").setAttribute("href", "https://onlinemathcontest.com/contests/" + String(latest["ContestScreenName"]).split(".")[0]);
+	})
+	.catch(() => {
+		if (omcLoading) {
+			omcLoading.innerHTML = '<span>成績を取得できませんでした</span>';
+			omcLoading.removeAttribute("role");
+		}
 	});
 </script>
 	<script src="https://yamato0915.xsrv.jp/statics/js/chart.js?v={{ site.time | date: '%s' }}" defer></script>

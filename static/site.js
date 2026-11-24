@@ -1,4 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
+	const loadingImageUrl = "/static/loading.svg";
+	window.createLoadingIndicator = (label = "読み込んでいます…", className = "loading-inline") => {
+		const wrapper = document.createElement("span");
+		wrapper.className = className;
+		wrapper.setAttribute("role", "status");
+		wrapper.setAttribute("aria-live", "polite");
+		const image = document.createElement("img");
+		image.src = loadingImageUrl;
+		image.alt = "";
+		image.setAttribute("aria-hidden", "true");
+		const text = document.createElement("span");
+		text.textContent = label;
+		wrapper.append(image, text);
+		return wrapper;
+	};
+
 	const toggle = document.getElementById("nav-toggle");
 	const menu = document.getElementById("nav-menu");
 	if (toggle && menu) {

@@ -29,6 +29,39 @@
 	function rankMessage(text, error = false) {
 		const node = $('rank-lookup-result'); node.hidden = false; node.textContent = text; node.dataset.error = String(error);
 	}
+	function rankLoadingMessage(text) {
+		const node = $('rank-lookup-result');
+		node.hidden = false;
+		node.replaceChildren();
+		if (typeof window.createLoadingIndicator === 'function') {
+			node.append(window.createLoadingIndicator(text));
+		} else {
+			node.classList.add('loading-inline');
+			const image = document.createElement('img');
+			image.src = '/static/loading.svg';
+			image.alt = '';
+			image.setAttribute('aria-hidden', 'true');
+			const label = document.createElement('span');
+			label.textContent = text;
+			node.append(image, label);
+		}
+		node.dataset.error = 'false';
+	}
+	function messageLoading(text) {
+		$('registration-status').replaceChildren();
+		if (typeof window.createLoadingIndicator === 'function') {
+			$('registration-status').append(window.createLoadingIndicator(text));
+		} else {
+			const image = document.createElement('img');
+			image.src = '/static/loading.svg';
+			image.alt = '';
+			image.setAttribute('aria-hidden', 'true');
+			const label = document.createElement('span');
+			label.textContent = text;
+			$('registration-status').append(image, label);
+		}
+		$('registration-status').dataset.error = 'false';
+	}
 	function riotInput() { return { gameName: $('p-riot-name').value.trim(), tagline: $('p-riot-tag').value.trim() }; }
 	function sameRiotId(a, b) {
 		return Boolean(a && b) && a.gameName.trim().toLocaleLowerCase() === b.gameName.trim().toLocaleLowerCase()
@@ -251,7 +284,7 @@
 	for (const input of [$('p-name'), $('p-vc'), $('p-rank-consent')]) input.addEventListener('input', updateControls);
 	$('rank-lookup-btn').addEventListener('click', async () => {
 		if (!canEdit || busyLookup || busySubmit || !TeamRoom.validateRegistrationInput(formValue())) return;
-		stopRefresh(); busyLookup = true; updateControls(); rankMessage('ランクを取得しています…');
+		stopRefresh(); busyLookup = true; updateControls(); rankLoadingMessage('ランクを取得しています…');
 		try {
 			const value = formValue();
 			const result = TeamRoom.validateRankVerification(await api.lookupRank({ roomId: id, participantToken: token,
@@ -270,7 +303,7 @@
 		const verified = matchingVerification(), value = formValue();
 		if (busyLookup || busySubmit || !canEdit || !verified) return;
 		if (!TeamRoom.validateRegistrationInput(value)) { message('表示名、Riot ID、VC設定、同意を確認してください。', true); return; }
-		stopRefresh(); busySubmit = true; updateControls(); message('登録情報を保存しています…');
+		stopRefresh(); busySubmit = true; updateControls(); messageLoading('登録情報を保存しています…');
 		try {
 			const body = { ...value, verificationId: verified.saved ? null : verified.verificationId };
 			render(await api.request(`/rooms/${id}/registration`, { method: 'PUT', token, body }), true);

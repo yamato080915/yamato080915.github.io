@@ -10,6 +10,22 @@
 		$('sync-status').textContent = message;
 		$('sync-status').dataset.error = String(error);
 	}
+	function loadingStatus(message) {
+		$('sync-status').replaceChildren();
+		if (typeof window.createLoadingIndicator === 'function') {
+			$('sync-status').append(window.createLoadingIndicator(message));
+		} else {
+			const image = document.createElement('img');
+			image.src = '/static/loading.svg';
+			image.alt = '';
+			image.setAttribute('aria-hidden', 'true');
+			const text = document.createElement('span');
+			text.textContent = message;
+			$('sync-status').append(image, text);
+			$('sync-status').classList.add('loading-inline');
+		}
+		$('sync-status').dataset.error = 'false';
+	}
 	function sessionStorageValue() {
 		try { return sessionStorage.getItem(ADMIN_SESSION_KEY); }
 		catch (_) { return null; }
@@ -383,7 +399,7 @@
 	}
 	async function perform(action, message = '処理しています…') {
 		if (busy || halted) return;
-		clearTimeout(timer); busy = true; manager.cancelSync(); controls(); status(message);
+		clearTimeout(timer); busy = true; manager.cancelSync(); controls(); loadingStatus(message);
 		try {
 			await action();
 			synchronized();
@@ -431,6 +447,7 @@
 	document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); else clearTimeout(timer); });
 	window.addEventListener('storage', event => { if (event.key?.startsWith(TeamRoom.PREFIX)) refresh(); });
 	async function init() {
+		loadingStatus('募集を準備しています…');
 		try {
 			const roomId = new URLSearchParams(location.search).get('id');
 			const api = new TeamRoom.Api(undefined, { accessToken: sessionStorageValue() });
@@ -441,6 +458,18 @@
 					event.preventDefault();
 					const submit = $('admin-login-submit');
 					submit.disabled = true;
+					if (typeof window.createLoadingIndicator === 'function') {
+						$('admin-login-status').replaceChildren(window.createLoadingIndicator('ログインしています…'));
+					} else {
+						$('admin-login-status').classList.add('loading-inline');
+						const image = document.createElement('img');
+						image.src = '/static/loading.svg';
+						image.alt = '';
+						image.setAttribute('aria-hidden', 'true');
+						const text = document.createElement('span');
+						text.textContent = 'ログインしています…';
+						$('admin-login-status').replaceChildren(image, text);
+					}
 					try {
 						const session = await api.signIn($('admin-email').value.trim(), $('admin-password').value);
 						saveSession(session.access_token);

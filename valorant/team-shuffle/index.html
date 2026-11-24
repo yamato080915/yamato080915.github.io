@@ -46,7 +46,7 @@ css:
 				<button id="new-room-btn" type="button" class="button button-danger" disabled>新しい募集</button>
 				<button id="retry-sync-btn" type="button" class="button button-secondary">再取得</button>
 			</div>
-			<p id="sync-status" class="field-help shuffle-status" role="status" aria-live="polite">募集を準備しています。</p>
+			<p id="sync-status" class="field-help shuffle-status" role="status" aria-live="polite"><span class="loading-inline"><img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true"><span>募集を準備しています…</span></span></p>
 			<p class="field-help shuffle-help">参加URLを共有すると、参加者が自分で情報を登録できます。受付中は5秒ごとに取得します。募集は12時間有効で、途中終了もできます。</p>
 		</div>
 	</section>
