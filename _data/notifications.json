@@ -10,5 +10,11 @@
     "title": "cloudflare pagesへの移行のお知らせ",
     "body": "github pagesからcloudflare pagesへと移行しました。",
     "date": "2026-11-17"
+  },
+  {
+    "id": "member-exchange",
+    "title": "新機能のお知らせ",
+    "body": "チーム分け後のメンバー入れ替えを行えるようになりました。",
+    "date": "2026-11-24"
   }
 ]

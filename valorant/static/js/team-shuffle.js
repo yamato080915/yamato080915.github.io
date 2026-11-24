@@ -116,6 +116,9 @@
 		if (text !== undefined) el.textContent = text;
 		return el;
 	}
+	function canManageTeams() {
+		return Boolean(manager?.state?.organizerToken);
+	}
 	function rankBadge(value) {
 		const badge = element('span', 'badge badge-neutral shuffle-rank-badge');
 		const label = value.tier === 'unranked' ? 'ランクなし'
@@ -133,7 +136,7 @@
 	}
 	function person(p, inTeam = false, teamIndex = null) {
 		const row = element('li', 'list-item shuffle-person');
-		if (inTeam && teamIndex !== null && manager.api.accessToken) {
+		if (inTeam && teamIndex !== null && canManageTeams()) {
 			row.draggable = true;
 			row.dataset.teamIndex = String(teamIndex);
 			row.dataset.participantId = p.id;
@@ -170,7 +173,7 @@
 	}
 	function mapImage(map) { return `linear-gradient(rgb(15 23 42 / .45), rgb(15 23 42 / .45)), url('/valorant/static/pictures/${map}.png')`; }
 	function setupTeamDragAndDrop() {
-		if (!manager.api.accessToken) return;
+		if (!canManageTeams()) return;
 		let dragged = null;
 		document.querySelectorAll('.shuffle-drag-person').forEach(row => {
 			row.addEventListener('dragstart', event => {
