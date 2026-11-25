@@ -139,6 +139,13 @@
 	.loading-table-cell { @apply text-center text-slate-500; }
 	.loading-card { @apply flex min-h-24 items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm text-slate-500; }
 	.loading-card img { @apply size-10 shrink-0; }
+	.loading-chart { @apply relative overflow-hidden; }
+	.loading-chart-indicator { @apply absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-50/90 text-sm text-slate-500; }
+	.loading-chart-indicator img { @apply size-12; }
+	.page-loading-overlay { @apply fixed inset-0 z-[100] hidden place-items-center bg-slate-50/95 text-slate-600; }
+	.page-loading .page-loading-overlay { @apply grid; }
+	.page-loading-content { @apply flex flex-col items-center gap-3 text-sm; }
+	.page-loading-content img { @apply size-16; }
 }
 
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {

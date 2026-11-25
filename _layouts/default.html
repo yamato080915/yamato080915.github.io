@@ -3,6 +3,13 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<script>
+		document.documentElement.classList.add("page-loading");
+		window.pageLoadingInitialized = false;
+		window.addEventListener("load", () => {
+			if (!window.pageLoadingInitialized) document.documentElement.classList.remove("page-loading");
+		}, { once: true });
+	</script>
 	<link rel="icon" href="{{ '/static/favicon.ico' | relative_url }}?v={{ site.time | date: '%s' }}" type="image/x-icon">
 	<link rel="apple-touch-icon" href="{{ '/static/apple-touch-icon.png' | relative_url }}?v={{ site.time | date: '%s' }}" sizes="180x180">
 	<link rel="icon" type="image/png" href="{{ '/static/android-touch-icon.png' | relative_url }}?v={{ site.time | date: '%s' }}" sizes="192x192">
@@ -20,6 +27,12 @@
 	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1554074707970224" crossorigin="anonymous"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-slate-50 text-slate-800">
+	<div id="page-loading-overlay" class="page-loading-overlay" role="status" aria-live="polite">
+		<div class="page-loading-content">
+			<img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true">
+			<span>ページを読み込んでいます…</span>
+		</div>
+	</div>
 	<header class="sticky top-0 z-50 px-3 py-3 sm:px-5">
 		<nav class="glass-nav mx-auto w-full max-w-7xl">
 			<div class="relative z-10 flex min-h-14 items-center justify-between gap-4 px-4 sm:px-5">

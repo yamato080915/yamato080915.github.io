@@ -49,13 +49,25 @@ title: Home
 		<article class="panel"><div class="panel-body">
 			<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="text-xl font-bold text-slate-950">AtCoder</h3><a href="https://atcoder.jp/users/yamato0915" target="_blank" rel="noopener noreferrer" class="button button-secondary button-sm">@yamato0915<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></div>
 			<div class="relative mt-5 flex min-h-24 items-center gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50 p-4" id="atcoder-div"><div class="loading-card w-full" id="atcoder-loading" role="status" aria-live="polite"><img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true"><span>成績を取得しています…</span></div><div class="ratingf min-w-20 text-center text-4xl" id="rating"></div><div class="min-w-16 text-center text-sm"><div class="font-semibold" id="place"></div><div class="mt-1 text-xs text-slate-500" id="diff"></div></div><div class="min-w-0 flex-1"><div class="text-xs text-slate-500" id="endtime"></div><div class="compressed-text mt-1 max-w-full font-semibold text-slate-800" id="contestname"></div></div><a id="atcoder-a" class="absolute inset-0 rounded-2xl"></a></div>
-			<div class="mt-5 aspect-video"><canvas id="ratingChart" width="800" height="450"></canvas></div>
+			<div class="loading-chart mt-5 aspect-video">
+				<canvas id="ratingChart" width="800" height="450"></canvas>
+				<div id="ratingChart-loading" class="loading-chart-indicator" role="status" aria-live="polite">
+					<img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true">
+					<span>レーティングチャートを読み込んでいます…</span>
+				</div>
+			</div>
 			<a href="{{ '/algo/history' | relative_url }}" class="mt-5 inline-flex items-center text-sm font-semibold text-brand-700 hover:underline">[コンテスト成績表]</a>
 		</div></article>
 		<article class="panel"><div class="panel-body">
 			<div class="flex flex-wrap items-center justify-between gap-3"><h3 class="text-xl font-bold text-slate-950">OnlineMathContest</h3><a href="https://onlinemathcontest.com/users/yamato0915" target="_blank" rel="noopener noreferrer" class="button button-secondary button-sm">@yamato0915<i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></div>
 			<div class="relative mt-5 flex min-h-24 items-center gap-4 rounded-2xl border-2 border-slate-200 bg-slate-50 p-4" id="omc-div"><div class="loading-card w-full" id="omc-loading" role="status" aria-live="polite"><img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true"><span>成績を取得しています…</span></div><div class="ratingf min-w-20 text-center text-4xl" id="omcrating"></div><div class="min-w-16 text-center text-sm"><div class="font-semibold" id="omcplace"></div><div class="mt-1 text-xs text-slate-500" id="omcdiff"></div></div><div class="min-w-0 flex-1"><div class="text-xs text-slate-500" id="omcendtime"></div><div class="compressed-text mt-1 max-w-full font-semibold text-slate-800" id="omccontestname"></div></div><a id="omc-a" class="absolute inset-0 rounded-2xl"></a></div>
-			<div class="mt-5 aspect-video"><canvas id="omcRating" width="800" height="450"></canvas></div>
+			<div class="loading-chart mt-5 aspect-video">
+				<canvas id="omcRating" width="800" height="450"></canvas>
+				<div id="omcRating-loading" class="loading-chart-indicator" role="status" aria-live="polite">
+					<img src="{{ '/static/loading.svg' | relative_url }}" alt="" aria-hidden="true">
+					<span>レーティングチャートを読み込んでいます…</span>
+				</div>
+			</div>
 			<a href="{{ '/omc/history' | relative_url }}" class="mt-5 inline-flex items-center text-sm font-semibold text-brand-700 hover:underline">[コンテスト成績表]</a>
 		</div></article>
 	</div>
@@ -120,6 +132,14 @@ title: Home
 	<script src="https://yamato0915.xsrv.jp/statics/js/chart.js?v={{ site.time | date: '%s' }}" defer></script>
 <script>
 	window.addEventListener("DOMContentLoaded", () => {
+		if (window.Chart) {
+			Chart.register({
+				id: "ratingChartLoading",
+				afterRender(chart) {
+					document.getElementById(`${chart.canvas.id}-loading`)?.remove();
+				}
+			});
+		}
 		createRatingChart("https://yamato0915.xsrv.jp/api/atcoder/rating", "ratingChart", "rating", "place", "diff", "endtime", "contestname", "atcoder-a", "atcoder-div");
 		createRatingChart("https://yamato0915.xsrv.jp/api/omc/rating", "omcRating", "omcrating", "omcplace", "omcdiff", "omcendtime", "omccontestname", "omc-a", "omc-div");
 	});
