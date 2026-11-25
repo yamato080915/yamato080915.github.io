@@ -61,6 +61,7 @@
 		pointer-events: none;
 	}
 	.glass-home-link { @apply inline-flex min-h-10 items-center rounded-xl px-3 py-2 font-bold tracking-tight text-slate-950 transition duration-200 hover:bg-white/18 hover:text-brand-700 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] active:translate-y-px active:bg-white/30; }
+	.glass-home-link img { display: block; width: auto; height: 1.75rem; max-width: min(42vw, 11rem); }
 	.glass-nav-link { @apply inline-flex min-h-10 items-center rounded-xl px-3 py-2 text-sm font-medium text-slate-700 transition duration-200 hover:bg-white/18 hover:text-slate-950 hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] active:translate-y-px active:bg-white/30; }
 	.glass-icon-button { @apply grid size-11 shrink-0 place-items-center rounded-2xl border border-white/26 bg-white/6 text-xl text-slate-700 shadow-sm transition duration-200 hover:border-white/42 hover:bg-white/18 hover:text-slate-950 hover:shadow-md active:translate-y-px active:bg-white/30; }
 	.site-footer {
