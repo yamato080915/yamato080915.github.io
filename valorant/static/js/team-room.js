@@ -44,6 +44,7 @@
 		if (p.riotId === undefined) p.riotId = null;
 		if (p.rankModeVerified === undefined) p.rankModeVerified = null;
 		if (p.rankVerifiedAt === undefined) p.rankVerifiedAt = null;
+		if (p.teamGroupId === undefined) p.teamGroupId = null;
 	}
 	function validVerifiedIdentity(p) {
 		if (p.riotId === null) return p.rankModeVerified === null && p.rankVerifiedAt === null;
@@ -53,6 +54,7 @@
 	function validPlayer(p) {
 		normalizePlayerIdentity(p);
 		return validateRegistration(p) && validVerifiedIdentity(p) && isId(p.id)
+			&& (p.teamGroupId === null || isId(p.teamGroupId))
 			&& typeof p.editLocked === 'boolean' && Number.isInteger(p.version) && p.version >= 1;
 	}
 	function validDirectoryPlayer(p) {
@@ -157,19 +159,41 @@
 		}
 		return members.length === new Set(members).size;
 	}
+	function validTeamGroups(players, teams) {
+		const groups = new Map();
+		for (const player of players) {
+			if (!player.teamGroupId) continue;
+			if (!groups.has(player.teamGroupId)) groups.set(player.teamGroupId, []);
+			groups.get(player.teamGroupId).push(player.id);
+		}
+		if ([...groups.values()].some(ids => ids.length < 2 || ids.length > 5)) return false;
+		if (teams === null) return true;
+		const teamByPlayerId = new Map();
+		teams.forEach((team, index) => team.members.forEach(player => teamByPlayerId.set(player.id, index)));
+		return [...groups.values()].every(ids => new Set(ids.map(id => teamByPlayerId.get(id)).filter(index => index !== undefined)).size <= 1);
+	}
+	function teamUnit(team, participantId) {
+		const player = team.members.find(member => member.id === participantId);
+		if (!player) return null;
+		return player.teamGroupId
+			? team.members.filter(member => member.teamGroupId === player.teamGroupId)
+			: [player];
+	}
 	function validateState(state) {
 		if (!state || state.schemaVersion !== 3 || !validRoom(state.room) || !isToken(state.organizerToken)
 			|| !Array.isArray(state.players) || !Array.isArray(state.standbyPlayers)
 			|| ![...state.players, ...state.standbyPlayers].every(validPlayer)
 			|| !Number.isInteger(state.teamCount) || state.teamCount < 2 || state.teamCount > 100) return false;
-		const ids = [...state.players, ...state.standbyPlayers].map(p => p.id);
-		if (new Set(ids).size !== ids.length || !validTeams(state.lastTeams, new Set(ids))) return false;
+		const players = [...state.players, ...state.standbyPlayers];
+		const ids = players.map(p => p.id);
+		if (new Set(ids).size !== ids.length || !validTeams(state.lastTeams, new Set(ids))
+			|| !validTeamGroups(players, state.lastTeams)) return false;
 		if (state.pending !== null) {
 			const p = state.pending;
 			if (!p || !isId(p.request?.operationId) || !Number.isInteger(p.request.expectedRevision)
 				|| !Array.isArray(p.activeIds) || !p.activeIds.every(id => ids.includes(id))
 				|| !Array.isArray(p.request.participantIds) || !p.request.participantIds.every(id => ids.includes(id))
-				|| !validTeams(p.teams, new Set(ids))
+				|| !validTeams(p.teams, new Set(ids)) || !validTeamGroups(players, p.teams)
 				|| JSON.stringify(p.request.teams) !== JSON.stringify(teamResultPayload(p.teams))) return false;
 		}
 		return true;
@@ -257,6 +281,15 @@
 			body: {
 				p_room_id: match[1], p_organizer_token: token ?? null,
 				p_rank_mode: body?.rankMode ?? null
+			}
+		};
+		if ((match = path.match(/^\/rooms\/([^/]+)\/team-group$/)) && verb === 'PUT') return {
+			name: 'team_shuffle_set_team_group',
+			body: {
+				p_room_id: match[1], p_organizer_token: token ?? null,
+				p_expected_revision: body?.expectedRevision ?? null,
+				p_participant_ids: body?.participantIds ?? null,
+				p_group_id: body?.groupId ?? null
 			}
 		};
 		if ((match = path.match(/^\/rooms\/([^/]+)\/registration$/)) && verb === 'GET') return {
@@ -599,6 +632,40 @@
 				this.state.teamCount = count; this.save();
 			});
 		}
+		setTeamGroup(participantIds, groupId) {
+			return this.run(async () => {
+				if (this.state.pending || this.state.lastTeams) throw new Error('同チームグループはチーム分け前に設定してください。');
+				if (!Array.isArray(participantIds) || participantIds.length === 0
+					|| participantIds.some(id => !isId(id)) || new Set(participantIds).size !== participantIds.length
+					|| (groupId !== null && !isId(groupId))) {
+					throw new Error('同チームグループの指定が不正です。');
+				}
+				const players = [...this.state.players, ...this.state.standbyPlayers];
+				const selectedIds = new Set(participantIds);
+				if (players.some(player => selectedIds.has(player.id) && player.teamGroupId)) {
+					const selectedGroupIds = new Set(players
+						.filter(player => selectedIds.has(player.id) && player.teamGroupId)
+						.map(player => player.teamGroupId));
+					for (const player of players) {
+						if (selectedGroupIds.has(player.teamGroupId)) selectedIds.add(player.id);
+					}
+				}
+				if ([...selectedIds].some(id => !players.some(player => player.id === id))) {
+					throw new Error('参加者一覧が更新されています。再取得してください。');
+				}
+				const selectedPlayers = players.filter(player => selectedIds.has(player.id));
+				if (groupId !== null && (selectedPlayers.length < 2 || selectedPlayers.length > 5)) {
+					throw new Error('同チームグループは2〜5人で設定してください。');
+				}
+				if (groupId === null && !selectedPlayers.some(player => player.teamGroupId)) return;
+				if (selectedPlayers.every(player => player.teamGroupId === groupId)) return;
+				this.absorb(await this.request('/team-group', 'PUT', {
+					expectedRevision: this.state.room.revision,
+					participantIds: [...selectedIds],
+					groupId
+				}));
+			});
+		}
 		setRankMode(rankMode) {
 			return this.run(async () => {
 				if (!RANK_MODES.includes(rankMode)) throw new Error('ランク入力基準の指定が不正です。');
@@ -632,8 +699,10 @@
 
 				const teams = clone(this.state.lastTeams);
 				const sourceTeam = teams[fromTeamIndex];
+				const sourceUnit = teamUnit(sourceTeam, participantId);
 				const sourceIndex = sourceTeam.members.findIndex(member => member.id === participantId);
 				if (sourceIndex === -1) throw new Error('移動元のメンバーが見つかりません。');
+				if (!sourceUnit) throw new Error('移動元のメンバーが見つかりません。');
 
 				if (fromTeamIndex === toTeamIndex) {
 					if (!targetParticipantId) throw new Error('同じチーム内では移動先のメンバーを指定してください。');
@@ -644,16 +713,35 @@
 				} else {
 					const targetTeam = teams[toTeamIndex];
 					if (targetParticipantId) {
-						const targetIndex = targetTeam.members.findIndex(member => member.id === targetParticipantId);
-						if (targetIndex === -1) throw new Error('移動先のメンバーが見つかりません。');
-						[targetTeam.members[targetIndex], sourceTeam.members[sourceIndex]] =
-							[sourceTeam.members[sourceIndex], targetTeam.members[targetIndex]];
+						const targetUnit = teamUnit(targetTeam, targetParticipantId);
+						if (!targetUnit) throw new Error('移動先のメンバーが見つかりません。');
+						if (sourceUnit.some(member => member.teamGroupId)
+							&& targetUnit.some(member => member.teamGroupId)
+							&& sourceUnit[0].teamGroupId === targetUnit[0].teamGroupId) {
+							throw new Error('同チームグループが分かれています。チーム分けをリセットして再実行してください。');
+						}
+						const sourceCapacity = sourceTeam.members.length + sourceTeam.vacancies;
+						const targetCapacity = targetTeam.members.length + targetTeam.vacancies;
+						const sourceSize = sourceTeam.members.length - sourceUnit.length + targetUnit.length;
+						const targetSize = targetTeam.members.length - targetUnit.length + sourceUnit.length;
+						if (sourceSize > sourceCapacity || targetSize > targetCapacity) {
+							throw new Error('グループ全員を移動する空き枠がありません。');
+						}
+						const sourceIds = new Set(sourceUnit.map(member => member.id));
+						const targetIds = new Set(targetUnit.map(member => member.id));
+						sourceTeam.members = sourceTeam.members.filter(member => !sourceIds.has(member.id));
+						targetTeam.members = targetTeam.members.filter(member => !targetIds.has(member.id));
+						sourceTeam.members.push(...targetUnit);
+						targetTeam.members.push(...sourceUnit);
+						sourceTeam.vacancies = sourceCapacity - sourceSize;
+						targetTeam.vacancies = targetCapacity - targetSize;
 					} else {
-						if (targetTeam.vacancies < 1) throw new Error('移動先のチームに空き枠がありません。メンバー同士をドロップしてください。');
-						const [moved] = sourceTeam.members.splice(sourceIndex, 1);
-						targetTeam.members.push(moved);
-						targetTeam.vacancies -= 1;
-						sourceTeam.vacancies += 1;
+						if (targetTeam.vacancies < sourceUnit.length) throw new Error('グループ全員を移動する空き枠がありません。メンバー同士をドロップしてください。');
+						const sourceIds = new Set(sourceUnit.map(member => member.id));
+						sourceTeam.members = sourceTeam.members.filter(member => !sourceIds.has(member.id));
+						targetTeam.members.push(...sourceUnit);
+						targetTeam.vacancies -= sourceUnit.length;
+						sourceTeam.vacancies += sourceUnit.length;
 					}
 				}
 

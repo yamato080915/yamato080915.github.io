@@ -57,6 +57,13 @@ css:
 				<span>参加者（<span id="player-count">0</span>人）</span>
 				<button id="admin-add-participant-open" type="button" class="button button-primary button-sm">手動でユーザーを追加</button>
 			</div>
+			<div id="team-group-controls" class="panel-body shuffle-group-controls" hidden>
+				<p class="field-help">参加者を2〜5人選択して同じチームに固定できます。既存グループのメンバーを選ぶと、グループ全員がまとめられます。チーム分け前に設定してください。</p>
+				<div class="shuffle-actions">
+					<button id="team-group-create-btn" type="button" class="button button-secondary" disabled>選択メンバーを同チームにする</button>
+					<button id="team-group-clear-btn" type="button" class="button button-secondary" disabled>選択グループを解除</button>
+				</div>
+			</div>
 			<ul id="player-list" class="list shuffle-list"></ul>
 		</section>
 		<section class="panel">

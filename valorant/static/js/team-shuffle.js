@@ -6,6 +6,27 @@
 	const ADMIN_SESSION_KEY = 'valorant.teamShuffle.adminSession';
 	const ADMIN_TAB_KEY = 'valorant.teamShuffle.adminTab';
 	const labels = { open: '受付中', closed: '募集終了', expired: '期限切れ' };
+	let teamGroupDetails = new Map();
+	function groupLetter(index) {
+		let label = '';
+		do {
+			label = String.fromCharCode(65 + index % 26) + label;
+			index = Math.floor(index / 26) - 1;
+		} while (index >= 0);
+		return label;
+	}
+	function updateTeamGroupDetails(state) {
+		const groups = new Map();
+		for (const player of [...state.players, ...state.standbyPlayers]) {
+			if (!player.teamGroupId) continue;
+			if (!groups.has(player.teamGroupId)) groups.set(player.teamGroupId, []);
+			groups.get(player.teamGroupId).push(player.name);
+		}
+		teamGroupDetails = new Map([...groups.keys()].sort().map((id, index) => [
+			id,
+			{ label: groupLetter(index), members: groups.get(id) }
+		]));
+	}
 	function status(message, error = false) {
 		$('sync-status').textContent = message;
 		$('sync-status').dataset.error = String(error);
@@ -150,8 +171,18 @@
 		badge.append(element('span', '', label));
 		return badge;
 	}
-	function person(p, inTeam = false, teamIndex = null) {
+	function person(p, inTeam = false, teamIndex = null, groupSelectable = false) {
 		const row = element('li', 'list-item shuffle-person');
+		if (groupSelectable && canManageTeams()) {
+			const label = element('label', 'shuffle-group-select');
+			const checkbox = element('input');
+			checkbox.type = 'checkbox';
+			checkbox.dataset.groupParticipantId = p.id;
+			checkbox.setAttribute('aria-label', `${p.name}を同チームグループ設定の対象にする`);
+			checkbox.addEventListener('change', controls);
+			label.append(checkbox);
+			row.append(label);
+		}
 		if (inTeam && teamIndex !== null && canManageTeams()) {
 			row.draggable = true;
 			row.dataset.teamIndex = String(teamIndex);
@@ -166,6 +197,14 @@
 		badges.append(rankBadge(p));
 		if (pointsReady) badges.append(element('span', 'badge badge-primary', manager.point(p) + ' pts'));
 		badges.append(element('span', 'badge ' + (p.vc ? 'badge-success' : 'badge-danger'), p.vc ? 'VCあり' : 'VCなし'));
+		if (p.teamGroupId) {
+			const group = teamGroupDetails.get(p.teamGroupId);
+			if (group) {
+				const badge = element('span', 'badge badge-primary', `Team ${group.label} (${group.members.length}人)`);
+				badge.title = group.members.join('・');
+				badges.append(badge);
+			}
+		}
 		const accepting = manager.state.room.status === 'open' && Date.parse(manager.state.room.expiresAt) > Date.now();
 		badges.append(element('span', 'badge badge-neutral', !accepting ? '受付終了' : p.editLocked ? '情報確定' : '修正可能'));
 		info.append(badges); row.append(info);
@@ -183,9 +222,20 @@
 		}
 		row.append(remove); return row;
 	}
-	function list(id, players, empty) {
-		const node = $(id); node.replaceChildren(...players.map(p => person(p)));
+	function list(id, players, empty, groupSelectable = false) {
+		const node = $(id); node.replaceChildren(...players.map(p => person(p, false, null, groupSelectable)));
 		if (!players.length) node.append(element('li', 'shuffle-empty', empty));
+	}
+	function selectedGroupIds() {
+		const selected = new Set([...app.querySelectorAll('[data-group-participant-id]:checked')]
+			.map(input => input.dataset.groupParticipantId));
+		const selectedGroups = new Set(manager.state.players
+			.filter(player => selected.has(player.id) && player.teamGroupId)
+			.map(player => player.teamGroupId));
+		for (const player of manager.state.players) {
+			if (selectedGroups.has(player.teamGroupId)) selected.add(player.id);
+		}
+		return [...selected];
 	}
 	function mapImage(map) { return `linear-gradient(rgb(15 23 42 / .45), rgb(15 23 42 / .45)), url('/valorant/static/pictures/${map}.png')`; }
 	function setupTeamDragAndDrop() {
@@ -290,6 +340,14 @@
 		$('reset-teams-btn').disabled = unavailable || pending || !s?.lastTeams;
 		$('map-decision-btn').disabled = unavailable || pending || !s?.lastTeams || !s.room.mapSelection.allTeamsSelected || Boolean(s.room.mapSelection.selectedMap);
 		$('map-decision-reset-btn').disabled = unavailable || pending || !s?.room.mapSelection.selectedMap;
+		$('team-group-controls').hidden = !canManageTeams();
+		const groupEnabled = canManageTeams() && s?.room.status === 'open' && !s.lastTeams && !pending
+			&& !busy && !syncing && !halted && !replacingExpired;
+		const selectedGroupPlayerIds = s ? selectedGroupIds() : [];
+		const selectedGroupPlayers = s ? s.players.filter(player => selectedGroupPlayerIds.includes(player.id)) : [];
+		$('team-group-create-btn').disabled = !groupEnabled || selectedGroupPlayerIds.length < 2 || selectedGroupPlayerIds.length > 5;
+		$('team-group-clear-btn').disabled = !groupEnabled || !selectedGroupPlayers.some(player => player.teamGroupId);
+		app.querySelectorAll('[data-group-participant-id]').forEach(input => { input.disabled = !groupEnabled; });
 		app.querySelectorAll('[data-remove-id]').forEach(button => { button.disabled = unavailable || pending; });
 		app.querySelectorAll('[data-team-fixed-index]').forEach(checkbox => { checkbox.disabled = unavailable || syncing || pending; });
 	}
@@ -319,9 +377,10 @@
 		const key = JSON.stringify([pointsReady, s.room.id, s.room.status, s.players, s.standbyPlayers, s.lastTeams, s.room.mapSelection]);
 		if (renderKey !== key) {
 			renderKey = key;
+			updateTeamGroupDetails(s);
 			$('player-count').textContent = s.players.length;
 			$('standby-player-count').textContent = s.standbyPlayers.length;
-			list('player-list', s.players, '参加URLを共有して登録を待ちましょう。');
+			list('player-list', s.players, '参加URLを共有して登録を待ちましょう。', true);
 			list('standby-player-list', s.standbyPlayers, '補充待ちの参加者はいません。');
 			$('result').replaceChildren();
 			if (s.lastTeams) s.lastTeams.forEach((team, index) => {
@@ -422,6 +481,16 @@
 		perform(() => manager.newRoom());
 	});
 	$('shuffle-btn').addEventListener('click', () => perform(() => manager.shuffle(), 'チーム分けを確定しています…'));
+	$('team-group-create-btn').addEventListener('click', () => {
+		const participantIds = selectedGroupIds();
+		if (participantIds.length < 2 || participantIds.length > 5) return;
+		perform(() => manager.setTeamGroup(participantIds, crypto.randomUUID()), '同チームグループを保存しています…');
+	});
+	$('team-group-clear-btn').addEventListener('click', () => {
+		const participantIds = selectedGroupIds();
+		if (!participantIds.length) return;
+		perform(() => manager.setTeamGroup(participantIds, null), '同チームグループを解除しています…');
+	});
 	$('reset-teams-btn').addEventListener('click', () => {
 		if (confirm('チーム分け結果をリセットしますか？\n全員を通常参加へ戻し、受付中なら情報を再び修正できるようにします。')) perform(() => manager.reset());
 	});

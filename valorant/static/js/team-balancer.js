@@ -45,6 +45,10 @@
 			if (ids.has(player.id)) throw new Error(`${label}に重複したプレイヤーIDがあります。`);
 			if (!Number.isFinite(player.point)) throw new Error(`${label}のポイントが不正です。`);
 			if (typeof player.vc !== 'boolean') throw new Error(`${label}のVC設定が不正です。`);
+			if (player.teamGroupId !== undefined && player.teamGroupId !== null
+				&& (typeof player.teamGroupId !== 'string' || player.teamGroupId.length === 0)) {
+				throw new Error(`${label}の同チームグループが不正です。`);
+			}
 			ids.add(player.id);
 		}
 		return ids;
@@ -220,6 +224,207 @@
 		return eligible[Math.floor(rng() * eligible.length)];
 	}
 
+	function groupedPlayers(players) {
+		const groups = new Map();
+		for (const player of players) {
+			const key = player.teamGroupId ? `group:${player.teamGroupId}` : `player:${player.id}`;
+			if (!groups.has(key)) groups.set(key, []);
+			groups.get(key).push(player);
+		}
+		return [...groups.entries()].map(([key, members]) => {
+			if (key.startsWith('group:') && (members.length < 2 || members.length > 5)) {
+				throw new Error('同チームグループは2〜5人で設定してください。');
+			}
+			return { key, members, size: members.length };
+		});
+	}
+
+	function teamsFromGroups(groupAssignments, capacities) {
+		return groupAssignments.map((groups, index) => {
+			const members = groups.flatMap(group => group.members);
+			return {
+				members,
+				totalPoints: members.reduce((sum, player) => sum + player.point, 0),
+				vacancies: capacities[index] - members.length
+			};
+		});
+	}
+
+	function evaluateGroupedTeams(teams) {
+		const sizes = teams.map(team => team.members.length);
+		const meanSize = sizes.reduce((sum, size) => sum + size, 0) / sizes.length;
+		return {
+			sizeSpread: Math.max(...sizes) - Math.min(...sizes),
+			sizeDeviation: sizes.reduce((sum, size) => sum + Math.abs(size - meanSize), 0),
+			...evaluateTeams(teams)
+		};
+	}
+
+	function compareGroupedScores(left, right) {
+		for (const key of ['sizeSpread', 'sizeDeviation', 'pointSpread', 'pointDeviation', 'vcSpread', 'vcDeviation']) {
+			const difference = left[key] - right[key];
+			if (Math.abs(difference) > EPSILON) return difference < 0 ? -1 : 1;
+		}
+		return 0;
+	}
+
+	function buildGroupedCandidate(groups, capacities, rng) {
+		if (groups.length < capacities.length) return null;
+		const assignments = capacities.map(() => []);
+		const sizes = capacities.map(() => 0);
+		const orderedGroups = shuffle(groups, rng).sort((left, right) => right.size - left.size);
+
+		for (const group of orderedGroups) {
+			let bestScore = null;
+			let bestIndexes = [];
+			for (let index = 0; index < assignments.length; index++) {
+				if (sizes[index] + group.size > capacities[index]) continue;
+				assignments[index].push(group);
+				sizes[index] += group.size;
+				const score = evaluateGroupedTeams(teamsFromGroups(assignments, capacities));
+				assignments[index].pop();
+				sizes[index] -= group.size;
+				const comparison = bestScore === null ? -1 : compareGroupedScores(score, bestScore);
+				if (comparison < 0) {
+					bestScore = score;
+					bestIndexes = [index];
+				} else if (comparison === 0) {
+					bestIndexes.push(index);
+				}
+			}
+			if (bestIndexes.length === 0) return null;
+			const selectedIndex = bestIndexes[Math.floor(rng() * bestIndexes.length)];
+			assignments[selectedIndex].push(group);
+			sizes[selectedIndex] += group.size;
+		}
+
+		if (assignments.some(team => team.length === 0)) return null;
+		return assignments;
+	}
+
+	function improveGroupedCandidate(assignments, capacities, rng) {
+		let score = evaluateGroupedTeams(teamsFromGroups(assignments, capacities));
+		for (let pass = 0; pass < MAX_LOCAL_PASSES; pass++) {
+			let bestScore = score;
+			let bestMoves = [];
+			const sizes = assignments.map(team => team.reduce((sum, group) => sum + group.size, 0));
+
+			for (let from = 0; from < assignments.length; from++) {
+				for (let to = 0; to < assignments.length; to++) {
+					if (from === to) continue;
+					for (let fromIndex = 0; fromIndex < assignments[from].length; fromIndex++) {
+						const group = assignments[from][fromIndex];
+						if (assignments[from].length > 1 && sizes[to] + group.size <= capacities[to]) {
+							assignments[from].splice(fromIndex, 1);
+							assignments[to].push(group);
+							const nextScore = evaluateGroupedTeams(teamsFromGroups(assignments, capacities));
+							assignments[to].pop();
+							assignments[from].splice(fromIndex, 0, group);
+							const comparison = compareGroupedScores(nextScore, bestScore);
+							if (comparison < 0) {
+								bestScore = nextScore;
+								bestMoves = [{ type: 'move', from, to, fromIndex }];
+							} else if (comparison === 0 && compareGroupedScores(nextScore, score) < 0) {
+								bestMoves.push({ type: 'move', from, to, fromIndex });
+							}
+						}
+
+						for (let toIndex = 0; toIndex < assignments[to].length; toIndex++) {
+							const other = assignments[to][toIndex];
+							if (sizes[from] - group.size + other.size > capacities[from]
+								|| sizes[to] - other.size + group.size > capacities[to]) continue;
+							assignments[from][fromIndex] = other;
+							assignments[to][toIndex] = group;
+							const nextScore = evaluateGroupedTeams(teamsFromGroups(assignments, capacities));
+							assignments[from][fromIndex] = group;
+							assignments[to][toIndex] = other;
+							const comparison = compareGroupedScores(nextScore, bestScore);
+							if (comparison < 0) {
+								bestScore = nextScore;
+								bestMoves = [{ type: 'swap', from, to, fromIndex, toIndex }];
+							} else if (comparison === 0 && compareGroupedScores(nextScore, score) < 0) {
+								bestMoves.push({ type: 'swap', from, to, fromIndex, toIndex });
+							}
+						}
+					}
+				}
+			}
+
+			if (bestMoves.length === 0 || compareGroupedScores(bestScore, score) >= 0) break;
+			const move = bestMoves[Math.floor(rng() * bestMoves.length)];
+			if (move.type === 'move') {
+				const [group] = assignments[move.from].splice(move.fromIndex, 1);
+				assignments[move.to].push(group);
+			} else {
+				[assignments[move.from][move.fromIndex], assignments[move.to][move.toIndex]] =
+					[assignments[move.to][move.toIndex], assignments[move.from][move.fromIndex]];
+			}
+			score = bestScore;
+		}
+		return score;
+	}
+
+	function keepGroupedCandidate(candidates, candidate) {
+		const signature = teamSignature(candidate.teams, false);
+		if (candidates.some(existing => existing.signature === signature)) return;
+		candidates.push({ ...candidate, signature });
+		candidates.sort((left, right) => compareGroupedScores(left.score, right.score));
+		if (candidates.length > MAX_CANDIDATES) candidates.length = MAX_CANDIDATES;
+	}
+
+	function findGroupedBalance(players, teamCount, options) {
+		const settings = options || {};
+		const rng = settings.rng || Math.random;
+		const restarts = settings.restarts == null ? DEFAULT_RESTARTS : settings.restarts;
+		const capacities = settings.capacities || Array(teamCount).fill(5);
+		const groups = groupedPlayers(players);
+		if (!Number.isInteger(teamCount) || teamCount < 2 || teamCount > 100) {
+			throw new Error('チーム数は2〜100で指定してください。');
+		}
+		if (!Array.isArray(capacities) || capacities.length !== teamCount
+			|| capacities.some(capacity => !Number.isInteger(capacity) || capacity < 1 || capacity > 5)) {
+			throw new Error('チームの人数上限が不正です。');
+		}
+		if (players.length < teamCount) throw new Error('チーム数は参加人数以下にしてください。');
+		if (players.length > capacities.reduce((sum, capacity) => sum + capacity, 0)) {
+			throw new Error('チーム数を増やすか、グループを見直してください。');
+		}
+		if (!Number.isInteger(restarts) || restarts < 1) throw new Error('探索回数が不正です。');
+		if (groups.length < teamCount) return null;
+
+		const candidates = [];
+		for (let restart = 0; restart < restarts; restart++) {
+			const assignments = buildGroupedCandidate(groups, capacities, rng);
+			if (!assignments) continue;
+			const score = improveGroupedCandidate(assignments, capacities, rng);
+			keepGroupedCandidate(candidates, {
+				teams: teamsFromGroups(assignments, capacities),
+				score
+			});
+		}
+		if (candidates.length === 0) return null;
+
+		const best = candidates[0];
+		const eligible = candidates.filter(candidate =>
+			candidate.score.sizeSpread === best.score.sizeSpread
+			&& candidate.score.sizeDeviation <= best.score.sizeDeviation + EPSILON
+			&& candidate.score.pointSpread <= best.score.pointSpread + 1 + EPSILON
+			&& candidate.score.pointDeviation <= best.score.pointDeviation * 1.1 + 2 + EPSILON
+		);
+		return eligible[Math.floor(rng() * eligible.length)];
+	}
+
+	function balanceGrouped(players, teamCount, options) {
+		const result = findGroupedBalance(players, teamCount, options);
+		if (!result) {
+			throw new Error('同チームグループを維持して編成できません。チーム数を増やすか、グループを見直してください。');
+		}
+		return {
+			teams: result.teams.map(team => ({ ...team, vacancies: 0, members: [...team.members] })),
+			score: { ...result.score }
+		};
+	}
+
 	function balanceInitial(players, teamCount, options) {
 		const settings = options || {};
 		const rng = settings.rng || Math.random;
@@ -228,6 +433,9 @@
 		if (!Number.isInteger(teamCount) || teamCount < 2) throw new Error('チーム数は2以上の整数で指定してください。');
 		if (players.length < teamCount) throw new Error('チーム数は参加人数以下にしてください。');
 		if (players.length > teamCount * 5) throw new Error('1チーム5人を超えます。チーム数を増やしてください。');
+		if (players.some(player => player.teamGroupId)) {
+			return balanceGrouped(players, teamCount, { ...settings, rng, restarts });
+		}
 		if (!Number.isInteger(restarts) || restarts < 1) throw new Error('探索回数が不正です。');
 
 		const targetSizes = getTargetSizes(players.length, teamCount);
@@ -388,10 +596,60 @@
 		};
 	}
 
+	function rebalanceFlexibleTeamsWithGroups(baseTeams, standbyPlayers, rng, restarts) {
+		const capacities = baseTeams.map(team => team.members.length + team.vacancies);
+		const existingPlayers = baseTeams.flatMap(team => team.members);
+		const standbySlots = baseTeams.reduce((sum, team) => sum + team.vacancies, 0);
+		const availableNoVc = standbyPlayers.filter(player => !player.vc);
+		const availableVc = standbyPlayers.filter(player => player.vc);
+		const minimumNoVc = Math.max(0, standbySlots - availableVc.length);
+		const maximumNoVc = Math.min(standbySlots, availableNoVc.length);
+		const candidates = [];
+
+		for (let restart = 0; restart < restarts; restart++) {
+			const selectedNoVcCount = randomInt(minimumNoVc, maximumNoVc, rng);
+			const selectedPlayers = [
+				...shuffle(availableNoVc, rng).slice(0, selectedNoVcCount),
+				...shuffle(availableVc, rng).slice(0, standbySlots - selectedNoVcCount)
+			];
+			const balance = findGroupedBalance(
+				[...existingPlayers, ...selectedPlayers],
+				baseTeams.length,
+				{ rng, restarts: 1, capacities }
+			);
+			if (!balance) continue;
+			const selectedIds = new Set(selectedPlayers.map(player => player.id));
+			const selectedPlayerIds = balance.teams
+				.flatMap(team => team.members)
+				.filter(player => selectedIds.has(player.id))
+				.map(player => player.id);
+			keepGroupedCandidate(candidates, { ...balance, selectedPlayerIds });
+		}
+
+		if (candidates.length === 0) {
+			throw new Error('同チームグループを維持して補充できません。チーム固定またはグループ設定を見直してください。');
+		}
+		const chosen = candidates[0];
+		return {
+			teams: chosen.teams.map((team, index) => ({
+				...team,
+				vacancies: capacities[index] - team.members.length,
+				members: [...team.members]
+			})),
+			selectedPlayerIds: [...chosen.selectedPlayerIds],
+			score: { ...chosen.score },
+			vcSpreadLimit: chosen.score.vcSpread,
+			candidateCount: candidates.length
+		};
+	}
+
 	function rebalanceFlexibleTeams(baseTeams, standbyPlayers, rng, restarts) {
 		const targetSizes = baseTeams.map(team => team.members.length + team.vacancies);
 		const existingPlayers = baseTeams.flatMap(team => team.members);
 		const standbySlots = baseTeams.reduce((sum, team) => sum + team.vacancies, 0);
+		if (existingPlayers.some(player => player.teamGroupId) || standbyPlayers.some(player => player.teamGroupId)) {
+			return rebalanceFlexibleTeamsWithGroups(baseTeams, standbyPlayers, rng, restarts);
+		}
 		const availableNoVc = standbyPlayers.filter(player => !player.vc).length;
 		const availableVc = standbyPlayers.length - availableNoVc;
 		const existingNoVc = existingPlayers.filter(player => !player.vc).length;

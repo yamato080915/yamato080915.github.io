@@ -7,6 +7,9 @@
 .shuffle-team-fixed { display: inline-flex; align-items: center; gap: .4rem; cursor: pointer; font-size: .75rem; font-weight: 600; }
 .shuffle-team-fixed input { width: 1rem; height: 1rem; accent-color: #2563eb; }
 .shuffle-team-fixed:has(input:disabled) { cursor: not-allowed; opacity: .55; }
+.shuffle-group-controls { display: grid; gap: .75rem; }
+.shuffle-group-select { display: inline-flex; flex: 0 0 auto; align-items: center; padding-right: .25rem; }
+.shuffle-group-select input { width: 1rem; height: 1rem; accent-color: #2563eb; }
 .shuffle-url { display: flex; flex-wrap: wrap; gap: .5rem; }
 .shuffle-url input { flex: 1 1 16rem; min-width: 0; }
 .shuffle-rank-mode { padding: 0; border: 0; min-width: 0; }
