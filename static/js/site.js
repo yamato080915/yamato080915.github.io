@@ -81,6 +81,78 @@
 	}
 })();
 
+(() => {
+	const map = document.getElementById("nav-refraction-map");
+	const nav = document.querySelector(".glass-nav");
+	// URL フィルターは構文が認識されても、ブラウザーによっては描画に適用されない。
+	const isChromium = navigator.userAgentData?.brands.some(({ brand }) => brand === "Chromium")
+		?? /\b(?:Chrome|Chromium)\//.test(navigator.userAgent);
+	if (!map || !nav || !isChromium || !window.ResizeObserver || !("backdropFilter" in nav.style)) return;
+
+	const canvas = document.createElement("canvas");
+	const context = canvas.getContext("2d");
+	if (!context) return;
+	const scale = Number(map.nextElementSibling.getAttribute("scale"));
+	const edgeWidth = 14;
+	const maxOffset = 11;
+	let lastSize = "";
+
+	const encodeOffset = (offset) => Math.round(255 * (0.5 + offset / scale));
+
+	const observer = new ResizeObserver(async () => {
+		const { width, height } = nav.getBoundingClientRect();
+		const radius = Math.min(parseFloat(getComputedStyle(nav).borderTopLeftRadius), width / 2, height / 2);
+		const size = `${width}:${height}:${radius}`;
+		if (size === lastSize) return;
+		lastSize = size;
+		nav.classList.remove("is-refracting");
+		if (!width || !height || !Number.isFinite(radius)) return;
+
+		canvas.width = Math.ceil(width);
+		canvas.height = Math.ceil(height);
+		try {
+			const pixels = context.createImageData(canvas.width, canvas.height);
+			const halfWidth = width / 2;
+			const halfHeight = height / 2;
+			for (let row = 0; row < canvas.height; row++) {
+				const y = (row + 0.5) * height / canvas.height - halfHeight;
+				for (let column = 0; column < canvas.width; column++) {
+					const x = (column + 0.5) * width / canvas.width - halfWidth;
+					const qx = Math.abs(x) - (halfWidth - radius);
+					const qy = Math.abs(y) - (halfHeight - radius);
+					const cornerX = Math.max(qx, 0);
+					const cornerY = Math.max(qy, 0);
+					const cornerLength = Math.sqrt(cornerX * cornerX + cornerY * cornerY);
+					const depth = radius - cornerLength - Math.min(Math.max(qx, qy), 0);
+					const t = Math.min(Math.max(depth / edgeWidth, 0), 1);
+					// 角では円弧の法線、直線部分では最も近い辺に垂直な方向を使う。
+					const normalX = cornerLength ? cornerX / cornerLength : Number(qx > qy);
+					const normalY = cornerLength ? cornerY / cornerLength : Number(qy >= qx);
+					const shift = maxOffset * (1 - t) ** 2 * (1 + 2 * t);
+					const index = (row * canvas.width + column) * 4;
+					pixels.data[index] = encodeOffset(-Math.sign(x) * normalX * shift);
+					pixels.data[index + 1] = encodeOffset(-Math.sign(y) * normalY * shift);
+					pixels.data[index + 3] = 255;
+				}
+			}
+			context.putImageData(pixels, 0, 0);
+
+			const source = canvas.toDataURL("image/png");
+			const image = new Image();
+			image.src = source;
+			await image.decode();
+			if (size !== lastSize) return;
+			map.setAttribute("width", String(width));
+			map.setAttribute("height", String(height));
+			map.setAttribute("href", source);
+			nav.classList.add("is-refracting");
+		} catch {
+			// 変位マップを使えない場合は CSS のぼかしを表示する。
+		}
+	});
+	observer.observe(nav, { box: "border-box" });
+})();
+
 document.addEventListener("DOMContentLoaded", () => {
 	const loadingImageUrl = "/static/loading.svg";
 	window.createLoadingIndicator = (label = "読み込んでいます…", className = "loading-inline") => {

@@ -34,6 +34,14 @@
 		</div>
 	</div>
 	<header class="sticky top-0 z-50 px-3 py-3 sm:px-5">
+		<svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
+			<defs>
+				<filter id="nav-refraction" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+					<feImage id="nav-refraction-map" x="0" y="0" preserveAspectRatio="none" result="displacement" />
+					<feDisplacementMap in="SourceGraphic" in2="displacement" scale="24" xChannelSelector="R" yChannelSelector="G" />
+				</filter>
+			</defs>
+		</svg>
 		<nav class="glass-nav mx-auto w-full max-w-7xl">
 			<div class="relative z-10 flex min-h-14 items-center justify-between gap-4 px-4 sm:px-5">
 				<a class="glass-home-link" href="{{ '/' | relative_url }}">

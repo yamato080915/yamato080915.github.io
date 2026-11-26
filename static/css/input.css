@@ -41,6 +41,12 @@
 		-webkit-backdrop-filter: blur(24px) saturate(170%);
 		backdrop-filter: blur(24px) saturate(170%);
 	}
+	.glass-nav.is-refracting {
+		background: rgb(255 255 255 / 0.30);
+		backdrop-filter: url(#nav-refraction) blur(3px) saturate(125%);
+	}
+	.glass-nav.is-refracting .glass-nav-link { text-shadow: 0 0 3px white, 0 0 6px white; }
+	.glass-nav.is-refracting .glass-home-link img { filter: drop-shadow(0 0 2px white) drop-shadow(0 0 4px white); }
 	.glass-nav::before {
 		position: absolute;
 		inset: 0;
