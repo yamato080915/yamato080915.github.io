@@ -34,7 +34,15 @@
 		</div>
 	</div>
 	<header class="sticky top-0 z-50 px-3 py-3 sm:px-5">
-		<nav class="glass-nav mx-auto w-full max-w-7xl">
+		<svg width="0" height="0" class="absolute pointer-events-none" aria-hidden="true" focusable="false">
+			<defs>
+				<filter id="nav-glass-lens" x="0" y="0" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+					<feImage id="nav-glass-map" x="0" y="0" preserveAspectRatio="none" result="rim"/>
+					<feDisplacementMap id="nav-glass-bend" in="SourceGraphic" in2="rim" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+				</filter>
+			</defs>
+		</svg>
+		<nav class="glass-nav mx-auto w-full max-w-7xl" aria-label="メインナビゲーション">
 			<div class="relative z-10 flex min-h-14 items-center justify-between gap-4 px-4 sm:px-5">
 				<a class="glass-home-link" href="{{ '/' | relative_url }}">
 					<img src="{{ '/static/logo.svg' | relative_url }}" alt="tanzwalzer.com ホームへ">
@@ -47,8 +55,9 @@
 					<a href="https://github.com/yamato080915" target="_blank" rel="noopener noreferrer" class="glass-icon-button ml-1" aria-label="GitHubプロフィールを開く">
 						<img src="{{ '/static/logos/github-icon.svg' | relative_url }}" alt="" class="size-5" aria-hidden="true">
 					</a>
+					<button type="button" class="glass-icon-button" data-glass-settings aria-controls="glass-settings" aria-expanded="false" aria-label="ガラス設定" title="ガラス設定"><i class="bi bi-sliders" aria-hidden="true"></i></button>
 				</div>
-				<button id="nav-toggle" class="glass-icon-button md:hidden" type="button" aria-controls="nav-menu" aria-expanded="false" aria-label="Toggle navigation">
+				<button id="nav-toggle" class="glass-icon-button md:hidden" type="button" aria-controls="nav-menu" aria-expanded="false" aria-label="ナビゲーションメニュー">
 					<i class="bi bi-list" aria-hidden="true"></i>
 				</button>
 			</div>
@@ -61,9 +70,22 @@
 					<a href="https://github.com/yamato080915" target="_blank" rel="noopener noreferrer" class="glass-nav-link mt-1 w-full" aria-label="GitHubプロフィールを開く">
 						<img src="{{ '/static/logos/github-logo.svg' | relative_url }}" alt="GitHub" class="h-6 w-auto">
 					</a>
+					<button type="button" class="glass-nav-link gap-2" data-glass-settings aria-controls="glass-settings" aria-expanded="false"><i class="bi bi-sliders" aria-hidden="true"></i>ガラス設定</button>
 				</div>
 			</div>
 		</nav>
+		<section id="glass-settings" class="glass-settings" aria-labelledby="glass-settings-title" hidden>
+			<div class="flex items-center justify-between">
+				<h2 id="glass-settings-title" class="font-bold">ガラス設定</h2>
+				<button type="button" class="close-button" id="glass-close" aria-label="ガラス設定を閉じる">×</button>
+			</div>
+			<label for="glass-transparency">透明度 <output for="glass-transparency" aria-live="off">75%</output></label>
+			<input id="glass-transparency" type="range" min="0" max="100" value="75">
+			<label for="glass-refraction">屈折の強さ <output for="glass-refraction" aria-live="off">40%</output></label>
+			<input id="glass-refraction" type="range" min="0" max="100" value="40">
+			<p id="glass-support" class="text-xs text-slate-600" hidden>このブラウザーでは縁の屈折を表示できません。</p>
+			<button id="glass-reset" type="button" class="button button-secondary button-sm mt-3">初期設定に戻す</button>
+		</section>
 	</header>
 	{% unless page.url == '/valorant/team-shuffle/register/' %}
 			{% assign notifications = site.data.notifications %}
