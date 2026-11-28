@@ -131,7 +131,7 @@ function initNavGlass(nav, menuToggle, closeMenu) {
 	const storageKey = "yamato080915.nav-glass.v1";
 	const defaults = () => reduceTransparency.matches
 		? { transparency: 0, refraction: 0 }
-		: { transparency: 75, refraction: 40 };
+		: { transparency: 100, refraction: 100 };
 	const validPercent = value => Number.isInteger(value) && value >= 0 && value <= 100;
 	let saved = null;
 	let opener = null;
