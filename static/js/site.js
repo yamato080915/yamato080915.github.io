@@ -93,8 +93,8 @@
 	const context = canvas.getContext("2d");
 	if (!context) return;
 	const scale = Number(map.nextElementSibling.getAttribute("scale"));
-	const edgeWidth = 16;
-	const maxOffset = 17;
+	const edgeWidth = 14;
+	const maxOffset = 11;
 	let lastSize = "";
 
 	const encodeOffset = (offset) => Math.round(255 * (0.5 + offset / scale));

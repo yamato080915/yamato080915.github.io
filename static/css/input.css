@@ -42,7 +42,7 @@
 		backdrop-filter: blur(24px) saturate(170%);
 	}
 	.glass-nav.is-refracting {
-		background: rgb(255 255 255 / 0.16);
+		background: rgb(255 255 255 / 0.30);
 		backdrop-filter: url(#nav-refraction) blur(3px) saturate(125%);
 	}
 	.glass-nav.is-refracting .glass-nav-link { text-shadow: 0 0 3px white, 0 0 6px white; }
